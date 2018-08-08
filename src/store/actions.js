@@ -1,7 +1,7 @@
 import {getFromStorage, saveToStorage, ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT} from './types'
 import ls from './localStorage'
-import contract from '../api/contract'
-import ipfs from '../api/ipfs'
+import contract from '../dweb/contract'
+import ipfs from '../dweb/ipfs'
 
 export default {
   [ADD_COMMENT.type] ({ commit, state }, { parent, text }) {
@@ -26,7 +26,6 @@ export default {
     let comment
     contract.getComment(id).then(inComment => {
       comment = inComment
-      console.log(comment)
       return ipfs.getText(comment.ipfsHash)
     }).then(text => {
       comment.text = text

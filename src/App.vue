@@ -10,6 +10,14 @@
       <h3>moderator: {{ rootComment.moderator }}</h3>
       <h3>moderated: {{ rootComment.moderated }}</h3>
       <h3>datePosted: {{ rootComment.datePosted }}</h3>
+      <svg :data-jdenticon-value="rootComment.author" width="80" height="80">
+        Fallback text or image for browsers not supporting inline svg.
+      </svg>
+
+      <ul v-if="!loading" class="comment-children">
+        <comment v-for="id in rootComment.children" :key="id" :id="id"></comment>
+      </ul>
+
       <!-- <div class="item-view-header">
         <a :href="item.url" target="_blank">
           <h1>{{ item.title }}</h1>
@@ -33,9 +41,9 @@
         </ul>
       </div> -->
     </template>
-    <textarea></textarea>
-    <button v-on:click="addComment">reply</button>
-    <button v-on:click="createThread">new thread</button>
+    <textarea class="editor" ref="textBox" id="MyID"></textarea>
+    <button @click="addComment">reply</button>
+    <button @click="createThread">new thread</button>
   </div>
 </template>
 
@@ -43,18 +51,17 @@
 import Spinner from './components/Spinner.vue'
 import Comment from './components/Comment.vue'
 import { ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT } from './store/types'
-
-const rootCommentIndex = 6
+import 'jdenticon'
 
 export default {
   name: 'app',
   components: { Spinner, Comment },
   data: () => ({
-    loading: true
+    loading: false
   }),
   computed: {
     rootComment () {
-      return this.$store.state.comments[rootCommentIndex]
+      return this.$store.state.comments[this.$store.state.rootCommentId]
     }
   },
   // Fetch comments when mounted on the client
@@ -63,7 +70,9 @@ export default {
   },
   // refetch comments if item changed
   watch: {
-    rootComment: 'fetchComments'
+    rootComment: function (val) {
+      this.fetchComments(val, 3, 3)
+    }
   },
   methods: {
     createThread () {
@@ -73,27 +82,35 @@ export default {
     },
 
     fetchThread () {
-      this.loading = true
       this.$store.dispatch(FETCH_COMMENT.type, {
-        id: rootCommentIndex
+        id: this.$store.state.rootCommentId
       })
     },
 
-    fetchComments (comment) {
-      if (comment && (comment.child || comment.sibling)) {
-        console.log(comment.child || comment.sibling)
-        this.$store.dispatch(FETCH_COMMENT.type, {
-          id: comment.child || comment.sibling
-        }).then(id => {
-          return this.fetchComments(this.$store.state.comments[id])
-        })
+    fetchComments (comment, breadth, depth) {
+      if (comment) {
+        if (comment.child && depth > 0) {
+          this.$store.dispatch(FETCH_COMMENT.type, {
+            id: comment.child
+          }).then(() => {
+            return this.fetchComments(this.$store.state.comments[comment.child], breadth, depth--)
+          })
+        }
+
+        if (comment.sibling && breadth > 0) {
+          this.$store.dispatch(FETCH_COMMENT.type, {
+            id: comment.sibling
+          }).then(() => {
+            return this.fetchComments(this.$store.state.comments[comment.sibling], breadth--, depth)
+          })
+        }
       }
     },
 
     addComment () {
       this.$store.dispatch(ADD_COMMENT.type, {
-        parent: rootCommentIndex,
-        text: 'hi will nice to meet you'
+        parent: this.$store.state.rootCommentId,
+        text: 'another one'
       })
     }
   }
@@ -101,13 +118,18 @@ export default {
 
 </script>
 
+<style lang="stylus">
+  #app
+    font-family: 'Avenir', Helvetica, Arial, sans-serif
+    -webkit-font-smoothing: antialiased
+    -moz-osx-font-smoothing: grayscale
+    text-align: left
+    color: #2c3e50
+    margin-top: 60px
+  .editor
+    width:500px
+</style>
+
 <style>
-  #app {
-    font-family: 'Avenir', Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: center;
-    color: #2c3e50;
-    margin-top: 60px;
-  }
+  @import '~simplemde/dist/simplemde.min.css';
 </style>

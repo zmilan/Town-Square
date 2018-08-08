@@ -2,9 +2,19 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 
+// import plugins
+import './plugins/simpleMDE'
+
+// register global utility filters.
+import * as filters from './util/filters'
+Object.keys(filters).forEach(key => {
+  Vue.filter(key, filters[key])
+})
+
 import App from './App'
 import store from './store'
 
+// setup config
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */

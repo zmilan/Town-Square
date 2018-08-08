@@ -1,3 +1,4 @@
 export default {
-  comments: {}
+  comments: {},
+  rootCommentId: 6
 }
