@@ -20,9 +20,19 @@
       </a>
 
       <div v-show="open">
-        <vue-markdown class="text">{{ comment.text }}</vue-markdown>
 
-        <div class="action-btns" v-if="!replying">
+        <vue-markdown v-if="!editing" class="text">{{ comment.text }}</vue-markdown>
+        <transition name="slide-fade">
+          <div v-if="editing">
+            <editor :id="id" ref="editingEditor" :autosave="false" :initialContent="comment.text"></editor>
+            <div class="md-btns">
+              <button class="md-btn" @click="editing = false">Cancel</button>
+              <button class="md-btn update" @click="update">Update</button>
+            </div>
+          </div>
+        </transition>
+
+        <div class="action-btns" v-if="!replying && !editing">
           <button class="action-btn" @click="replying = true">reply</button>
           <button class="action-btn" v-if="account == comment.author" @click="editing = true">edit</button>
           <button class="action-btn" v-if="account == comment.moderator && !comment.moderated" @click="moderate(true)">moderate</button>
@@ -31,7 +41,7 @@
 
         <transition name="slide-fade">
           <div v-if="replying">
-            <markdown-editor v-model="content" ref="markdownEditor" :configs="markdownConfigs"></markdown-editor>
+            <editor ref="replyEditor" :id="id" :autosave="true"></editor>
             <div class="md-btns">
               <button class="md-btn" @click="replying = false">Cancel</button>
               <button class="md-btn reply" @click="reply">Reply</button>
@@ -42,6 +52,7 @@
         <ul class="comment-children">
           <comment v-for="id in comment.children" :key="id" :id="id"></comment>
         </ul>
+
       </div>
     </div>
   </li>
@@ -49,32 +60,21 @@
 
 <script>
 import vueMarkdown from 'vue-markdown'
-import markdownEditor from 'vue-simplemde/src/markdown-editor'
-import { ADD_COMMENT } from '../store/types'
+import Editor from './Editor'
 
 export default {
   name: 'comment',
   props: ['id'],
   components: {
-    markdownEditor,
+    Editor,
     vueMarkdown
   },
   data () {
     return {
       open: true,
+      editing: false,
       replying: false,
-      content: '',
-      showDetails: false,
-      markdownConfigs: {
-        autosave: {
-          enabled: true,
-          uniqueId: 'pigeon-' + this.id,
-          delay: 1000
-        },
-        placeholder: 'What are your thoughts?',
-        spellChecker: false,
-        status: ['autosave']
-      }
+      showDetails: false
     }
   },
   computed: {
@@ -90,13 +90,10 @@ export default {
   },
   methods: {
     reply () {
-      console.log(this.content)
-      this.$store.dispatch(ADD_COMMENT.type, {
-        parent: this.comment.id,
-        text: this.content
-      }).then(() => {
-        this.replying = false
-      })
+      this.$refs.replyEditor.submitReply()
+    },
+    update () {
+      this.$refs.editingEditor.submitEdit()
     },
     moderate (value) {
 
@@ -146,7 +143,7 @@ export default {
           color black
           text-decoration underline
           cursor pointer
-      .reply
+      .reply, .update
         color black
         text-decoration underline
     .action-btns
@@ -169,11 +166,13 @@ export default {
         padding 0
         background-color transparent
         margin-bottom -0.5em
-.markdown-editor .CodeMirror, .markdown-editor .CodeMirror-scroll
-  min-height 100px
-.editor-toolbar::before
-  margin 0
-.editor-toolbar::after
-  margin 0
-  content ''
+</style>
+
+<style lang="stylus">
+/* not scoped */
+.comment
+  .comment-content
+    .text
+      p
+        margin 0.2em 0
 </style>

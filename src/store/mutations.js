@@ -1,8 +1,12 @@
 import Vue from 'vue'
 
-import {FETCH_COMMENT, ADD_COMMENT, GET_ACCOUNT} from './types'
+import {FETCH_COMMENT, ADD_COMMENT, EDIT_COMMENT, GET_ACCOUNT} from './types'
 
 export default {
+  [ADD_COMMENT.type]: (state, payload) => payload.map(comment => state.comments.push(comment)).ADD_COMMENT,
+  [EDIT_COMMENT.type]: (state, payload) => {
+    // TODO
+  },
   [FETCH_COMMENT.type]: (state, payload) => {
     for (let id in state.comments) {
       const comment = state.comments[id]
@@ -23,6 +27,5 @@ export default {
     }
     Vue.set(state.comments, payload.id, payload)
   },
-  [ADD_COMMENT.type]: (state, payload) => payload.map(comment => state.comments.push(comment)).ADD_COMMENT,
   [GET_ACCOUNT.type]: (state, payload) => state.account = payload // eslint-disable-line no-return-assign
 }

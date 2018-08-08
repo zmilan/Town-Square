@@ -1,4 +1,4 @@
-import {ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT, GET_ACCOUNT} from './types'
+import {ADD_COMMENT, CREATE_THREAD, EDIT_COMMENT, FETCH_COMMENT, GET_ACCOUNT} from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
 import metamask from '../dweb/metamask'
@@ -6,7 +6,7 @@ import metamask from '../dweb/metamask'
 export default {
   [ADD_COMMENT.type] ({ commit, state }, { parent, text }) {
     ipfs.setText(text).then(ipfsHash => {
-      return contract.addComment(parent, ipfsHash).then(txInfo => {
+      return contract.addComment(parent, ipfsHash, state.account).then(txInfo => {
         // if (txInfo.status) {
         //   commit()
         // }
@@ -19,6 +19,14 @@ export default {
     ipfs.setText(text).then(ipfsHash => {
       const parent = 0
       return contract.addComment(parent, ipfsHash)
+    })
+  },
+
+  [EDIT_COMMENT.type] ({ commit, state }, { id, text }) {
+    ipfs.setText(text).then(ipfsHash => {
+      return contract.editComment(id, ipfsHash, state.account)
+    }).then(txInfo => {
+      commit(EDIT_COMMENT.type, text)
     })
   },
 

@@ -5,13 +5,12 @@
         <a :href="rootComment.url" target="_blank">
           <h1>{{ rootComment.text }}</h1>
         </a>
-        <span v-if="rootComment.url" class="host">
-          ({{ rootComment.url | host }})
-        </span>
         <p class="meta">
           <div>{{ rootComment.author }}</div>
           {{ rootComment.time | timeAgo }} ago
         </p>
+        <editor :id="rootComment.id" ref="replyEditor" :autosave="false"></editor>
+        <button class="add-comment-btn" @click="addComment">add comment</button>
       </div>
       <div class="item-view-comments">
         <p class="item-view-comments-header">
@@ -27,13 +26,18 @@
 </template>
 
 <script>
-import Spinner from './components/Spinner.vue'
 import Comment from './components/Comment.vue'
-import { ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT, GET_ACCOUNT } from './store/types'
+import Editor from './components/Editor'
+import Spinner from './components/Spinner.vue'
+import { CREATE_THREAD, FETCH_COMMENT, GET_ACCOUNT } from './store/types'
 
 export default {
   name: 'app',
-  components: { Spinner, Comment },
+  components: {
+    Editor,
+    Comment,
+    Spinner
+  },
   data: () => ({
     loading: true
   }),
@@ -57,6 +61,10 @@ export default {
     }
   },
   methods: {
+    addComment () {
+      this.$refs.replyEditor.submitReply()
+    },
+
     createThread () {
       this.$store.dispatch(CREATE_THREAD.type, {
         text: 'hello my name is will'
@@ -98,20 +106,13 @@ export default {
       }
 
       return true
-    },
-
-    addComment () {
-      this.$store.dispatch(ADD_COMMENT.type, {
-        parent: this.$store.state.rootCommentId,
-        text: 'another one'
-      })
     }
   }
 }
 
 </script>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
 .item-view-header
   background-color #fff
   padding 1.8em 2em 1em
@@ -125,6 +126,15 @@ export default {
     color #828282
   .meta a
     text-decoration underline
+.add-comment-btn
+  background none
+  border 2px solid
+  color #828282
+  margin 1em
+  &:hover
+    color black
+    text-decoration underline
+    cursor pointer
 .item-view-comments
   background-color #fff
   margin-top 10px
@@ -137,14 +147,18 @@ export default {
   .spinner
     display inline-block
     margin -15px 0
-.comment-children
-  list-style-type none
-  padding 0
-  margin 0
 @media (max-width 600px)
   .item-view-header
     h1
       font-size 1.25em
+</style>
+
+<style lang="stylus">
+/* not scoped */
+.comment-children
+  list-style-type none
+  padding 0
+  margin 0
 </style>
 
 <style>

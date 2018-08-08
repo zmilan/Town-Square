@@ -10,13 +10,22 @@ const abi = [{"name": "__init__", "outputs": [], "inputs": [], "constant": false
 
 const contract = new web3.eth.Contract(abi, address)
 
+function ipfsHashToBytes32 (ipfsHash) {
+  return '0x' + bs58.decode(ipfsHash).slice(2).toString('hex')
+}
+
 export default {
-  addComment: function (parent, ipfsHash) {
-    const ipfsBytes32 = '0x' + bs58.decode(ipfsHash).slice(2).toString('hex')
-    return web3.eth.getAccounts().then(accounts => {
-      return contract.methods.addComment(parent, ipfsBytes32).send({
-        from: accounts[0]
-      })
+  addComment: function (parent, ipfsHash, account) {
+    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
+    return contract.methods.addComment(parent, ipfsBytes32).send({
+      from: account
+    })
+  },
+
+  editComment: function (id, ipfsHash, account) {
+    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
+    return contract.methods.editComment(id, ipfsBytes32).send({
+      from: account
     })
   },
 
