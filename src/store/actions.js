@@ -1,7 +1,7 @@
-import {getFromStorage, saveToStorage, ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT} from './types'
-import ls from './localStorage'
+import {ADD_COMMENT, CREATE_THREAD, FETCH_COMMENT, GET_ACCOUNT} from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
+import metamask from '../dweb/metamask'
 
 export default {
   [ADD_COMMENT.type] ({ commit, state }, { parent, text }) {
@@ -35,11 +35,12 @@ export default {
     })
   },
 
-  [getFromStorage.type] (context, todo) {
-    context.commit(getFromStorage.type, ls.fetch())
-  },
-
-  [saveToStorage.type] (context, todo) {
-    context.commit(saveToStorage.type)
+  [GET_ACCOUNT.type] ({ commit, state }) {
+    metamask.getAccounts().then(accounts => {
+      console.log(accounts)
+      if (accounts && accounts[0]) {
+        commit(GET_ACCOUNT.type, accounts[0])
+      }
+    })
   }
 }

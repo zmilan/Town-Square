@@ -1,3 +1,4 @@
 export default {
-  getComments: state => state.comments
+  getComments: state => state.comments,
+  getAccount: state => state.account
 }

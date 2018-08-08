@@ -4,6 +4,7 @@ import Vue from 'vue'
 
 // import plugins
 import './plugins/simpleMDE'
+import './plugins/vue-markdown'
 
 // register global utility filters.
 import * as filters from './util/filters'
