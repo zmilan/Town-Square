@@ -48,9 +48,7 @@ export default {
         moderated: results[5],
         edited: results[6],
         datePosted: results[7],
-        id: index,
-        children: [],
-        parent: 0
+        id: index
       }
 
       return comment

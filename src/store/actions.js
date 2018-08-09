@@ -1,4 +1,4 @@
-import {ADD_COMMENT, CREATE_THREAD, EDIT_COMMENT, FETCH_COMMENT, FETCH_NAME, FETCH_TEXT, GET_ACCOUNT, MODERATE_COMMENT, REGISTER_NAME} from './types'
+import {ADD_COMMENT, CREATE_THREAD, EDIT_COMMENT, FETCH_COMMENT_RESOURCES, FETCH_COMMENT, FETCH_COMMENTS, FETCH_NAME, FETCH_TEXT, GET_ACCOUNT, MODERATE_COMMENT, REGISTER_NAME} from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
 import metamask from '../dweb/metamask'
@@ -24,10 +24,62 @@ export default {
     })
   },
 
-  [FETCH_COMMENT.type] ({ commit, state }, { id }) {
+  [FETCH_COMMENT_RESOURCES.type] ({ state, dispatch }, { comment }) {
+    if (comment) {
+      dispatch(FETCH_NAME.type, { address: comment.author })
+      if (comment.author !== comment.moderator) {
+        dispatch(FETCH_NAME.type, { address: comment.moderator })
+      }
+      dispatch(FETCH_TEXT.type, { id: comment.id })
+    }
+  },
+
+  [FETCH_COMMENT.type] ({ commit, state, dispatch }, { id }) {
     return contract.getComment(id).then(comment => {
-      commit(FETCH_COMMENT.type, comment)
+      commit(FETCH_COMMENT.type, { comment })
+      dispatch(FETCH_COMMENT_RESOURCES.type, { comment })
     })
+  },
+
+  [FETCH_COMMENTS.type] ({ state, dispatch }, { id, numberToLoad }) {
+    const comment = state.comments[id]
+    if (!comment) {
+      // if the parent comment doesn't exist, go get it then run this function again
+      dispatch(FETCH_COMMENT.type, { id }).then(() => {
+        numberToLoad--
+        dispatch(FETCH_COMMENTS.type, { id, numberToLoad })
+      })
+    } else {
+      if (comment.child && numberToLoad > 0) {
+        console.log(`(${numberToLoad})`, comment.id + ' -> ' + comment.child)
+        numberToLoad--
+        // get the child comment
+        dispatch(FETCH_COMMENT.type, {
+          id: comment.child
+        }).then(() => {
+          // recusively call this function with the child comment
+          dispatch(FETCH_COMMENTS.type, {
+            id: comment.child,
+            numberToLoad
+          })
+        })
+      }
+
+      if (comment.sibling && numberToLoad > 0) {
+        console.log(`(${numberToLoad})`, comment.id + ' -> ' + comment.sibling)
+        numberToLoad--
+        // get the sibling comment
+        dispatch(FETCH_COMMENT.type, {
+          id: comment.sibling
+        }).then(() => {
+          // recusively call this function with the sibling comment
+          dispatch(FETCH_COMMENTS.type, {
+            id: comment.sibling,
+            numberToLoad
+          })
+        })
+      }
+    }
   },
 
   [FETCH_NAME.type] ({ commit, state }, { address }) {
@@ -51,7 +103,7 @@ export default {
     return metamask.getAccounts().then(accounts => {
       console.log(accounts)
       if (accounts && accounts[0]) {
-        commit(GET_ACCOUNT.type, accounts[0])
+        commit(GET_ACCOUNT.type, { account: accounts[0] })
       }
     })
   },

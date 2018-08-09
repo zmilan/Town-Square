@@ -20,7 +20,7 @@
           <a @click="open = !open">{{
             open
                 ? '[-]'
-                : '[+] ' + (comment.children.length + 1) + ' collapsed'
+                : '[+] collapsed'
           }}</a>
         </a>
 
@@ -32,7 +32,10 @@
 
       <div v-show="open">
 
-        <vue-markdown v-if="!editing && text" class="text">{{ text }}</vue-markdown>
+        <div v-if="text && !editing">
+          <vue-markdown v-once class="text">{{ text }}</vue-markdown>
+        </div>
+        <!-- <vue-markdown v-if="!editing && text" class="text">{{ text }}</vue-markdown> -->
         <transition name="slide-fade">
           <div v-if="editing">
             <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text"></editor>
@@ -46,8 +49,8 @@
         <div class="action-btns" v-if="!replying && !editing">
           <button class="action-btn" @click="replying = true">reply</button>
           <button class="action-btn" v-if="account == comment.author" @click="editing = true">edit</button>
-          <button class="action-btn" v-if="account == comment.moderator && !comment.moderated" @click="moderate(true)">moderate</button>
-          <button class="action-btn" v-if="account == comment.moderator && comment.moderated" @click="moderate(false)">unmoderate</button>
+          <button class="action-btn" v-if="account == comment.moderator && !comment.moderated" @click="moderate({ id, moderated: true })">moderate</button>
+          <button class="action-btn" v-if="account == comment.moderator && comment.moderated" @click="moderate({ id, moderated: false })">unmoderate</button>
         </div>
 
         <transition name="slide-fade">
@@ -61,8 +64,12 @@
         </transition>
 
         <ul class="comment-children">
-          <comment v-for="id in comment.children" :key="id" :id="id"></comment>
+          <comment v-for="id in children" :key="id" :id="id"></comment>
         </ul>
+
+        <button v-if="canLoadMore" @click="fetchComments({id, numberToLoad: 30})">
+          load more
+        </button>
 
       </div>
     </div>
@@ -70,10 +77,12 @@
 </template>
 
 <script>
+import { mapActions } from 'vuex'
 import VueMarkdown from 'vue-markdown'
+
 import Editor from './Editor'
 import Identicon from './Identicon'
-import { MODERATE_COMMENT } from '../store/types'
+import { FETCH_COMMENTS, MODERATE_COMMENT } from '../store/types'
 
 export default {
   name: 'comment',
@@ -95,9 +104,6 @@ export default {
     comment () {
       return this.$store.state.comments[this.id]
     },
-    text () {
-      return this.$store.state.texts[this.id]
-    },
     authorName () {
       return this.$store.state.names[this.comment.author]
     },
@@ -106,6 +112,17 @@ export default {
     },
     account () {
       return this.$store.state.account
+    },
+    children () {
+      return this.$store.state.children[this.id] || []
+    },
+    text () {
+      return this.$store.state.texts[this.id]
+    },
+    canLoadMore () {
+      const canLoadChild = this.comment.child && !this.$store.state.comments[this.comment.child]
+      const canLoadSibling = this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
+      return canLoadChild || canLoadSibling
     }
   },
   methods: {
@@ -115,12 +132,10 @@ export default {
     update () {
       this.$refs.editingEditor.submitEdit()
     },
-    moderate (value) {
-      this.$store.dispatch(MODERATE_COMMENT.type, {
-        id: this.id,
-        moderated: value
-      })
-    }
+    ...mapActions({
+      'fetchComments': FETCH_COMMENTS.type,
+      'moderate': MODERATE_COMMENT.type
+    })
   }
 }
 </script>
