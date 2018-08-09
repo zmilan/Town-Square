@@ -13,12 +13,9 @@ names: public(bytes32[address])
 
 comment_count: public(int128)
 
-passThroughAddress: address
-
 @public
 def __init__():
     self.comment_count = 0
-    passThroughAddress = convert(1, 'address')
 
 @public
 def startThread(_moderator: address, _ipfs_hash: bytes32) -> int128:
@@ -38,6 +35,8 @@ def startThread(_moderator: address, _ipfs_hash: bytes32) -> int128:
 
 @public
 def addComment(_parent: int128, _ipfs_hash: bytes32) -> int128:
+    assert self.comments[_parent].date_posted > 0
+
     self.comment_count += 1
 
     self.comments[self.comment_count] = {
@@ -52,9 +51,6 @@ def addComment(_parent: int128, _ipfs_hash: bytes32) -> int128:
     }
     
     self.comments[_parent].child = self.comment_count
-    
-    if self.comments[_parent].moderator == passThroughAddress:
-        self.comments[self.comment_count].moderator = msg.sender
 
     return self.comment_count
     

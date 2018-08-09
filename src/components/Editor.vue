@@ -4,11 +4,11 @@
 
 <script>
 import markdownEditor from 'vue-simplemde/src/markdown-editor'
-import { ADD_COMMENT, EDIT_COMMENT } from '../store/types'
+import { ADD_COMMENT, EDIT_COMMENT, CREATE_THREAD } from '../store/types'
 
 export default {
   name: 'editor',
-  props: ['id', 'autosave', 'initialContent'],
+  props: ['id', 'autosave', 'initialContent', 'placeholder'],
   components: {
     markdownEditor
   },
@@ -21,7 +21,7 @@ export default {
           uniqueId: 'pigeon-' + this.id,
           delay: 1000
         },
-        placeholder: 'What are your thoughts?',
+        placeholder: this.placeholder || 'What are your thoughts?',
         spellChecker: false,
         status: []
       }
@@ -29,16 +29,20 @@ export default {
   },
   methods: {
     submitReply () {
-      console.log(this.content)
       this.$store.dispatch(ADD_COMMENT.type, {
         parent: this.id,
         text: this.content
       })
     },
     submitEdit () {
-      console.log(this.content)
       this.$store.dispatch(EDIT_COMMENT.type, {
         id: this.id,
+        text: this.content
+      })
+    },
+    submitThread (moderator) {
+      this.$store.dispatch(CREATE_THREAD.type, {
+        moderator,
         text: this.content
       })
     }

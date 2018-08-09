@@ -3,5 +3,5 @@ var defaultEnv = require('./default.env')
 
 module.exports = merge(defaultEnv, {
   NODE_ENV: '"development"',
-  contractAddress: '"0x66bf29301b4b162ad4e93f2ae2a105109d011f24"' // rinkby
+  contractAddress: '"0xa11621553e1f0d19a9060e1ccf34aea9e713ac32"' // rinkby
 })

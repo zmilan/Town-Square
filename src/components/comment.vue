@@ -1,30 +1,41 @@
 <template>
-  <li v-if="comment" class="comment">
+  <li v-if="comment && !comment.moderated" class="comment">
     <div class="comment-content">
-      <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-        <a v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ comment.author }}</a>
-        <a v-else>{{ comment.author | truncate }}</a>    
-        •
-      </a>
-      <a class="by">
-        <a v-if="showDetails">{{ comment.datePosted | dateString }}</a>
-        <a v-else>{{ comment.datePosted | timeAgo }}</a>
-      </a>
+      <div class="byline">
+        
+        <identicon class="identicon" :address="comment.author"></identicon>
+        
+        <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
+          <a v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ authorName || comment.author }}</a>
+          <a v-else>{{ authorName || comment.author }}</a>    
+          •
+        </a>
 
-      <a class="toggle" :class="{ open }">
-        <a @click="open = !open">{{
-          open
-              ? '[-]'
-              : '[+] ' + (comment.children.length + 1) + ' collapsed'
-        }}</a>
-      </a>
+        <a class="by">
+          <a v-if="showDetails">{{ comment.datePosted | dateString }}</a>
+          <a v-else>{{ comment.datePosted | timeAgo }}</a>
+        </a>
+
+        <a class="toggle" :class="{ open }">
+          <a @click="open = !open">{{
+            open
+                ? '[-]'
+                : '[+] ' + (comment.children.length + 1) + ' collapsed'
+          }}</a>
+        </a>
+
+        <a class="edited" v-if="comment.edited && open">
+          *edited
+        </a>
+      
+      </div>
 
       <div v-show="open">
 
-        <vue-markdown v-if="!editing" class="text">{{ comment.text }}</vue-markdown>
+        <vue-markdown v-if="!editing && text" class="text">{{ text }}</vue-markdown>
         <transition name="slide-fade">
           <div v-if="editing">
-            <editor :id="id" ref="editingEditor" :autosave="false" :initialContent="comment.text"></editor>
+            <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text"></editor>
             <div class="md-btns">
               <button class="md-btn" @click="editing = false">Cancel</button>
               <button class="md-btn update" @click="update">Update</button>
@@ -59,15 +70,18 @@
 </template>
 
 <script>
-import vueMarkdown from 'vue-markdown'
+import VueMarkdown from 'vue-markdown'
 import Editor from './Editor'
+import Identicon from './Identicon'
+import { MODERATE_COMMENT } from '../store/types'
 
 export default {
   name: 'comment',
   props: ['id'],
   components: {
     Editor,
-    vueMarkdown
+    Identicon,
+    VueMarkdown
   },
   data () {
     return {
@@ -80,6 +94,12 @@ export default {
   computed: {
     comment () {
       return this.$store.state.comments[this.id]
+    },
+    text () {
+      return this.$store.state.texts[this.id]
+    },
+    authorName () {
+      return this.$store.state.names[this.comment.author]
     },
     etherscanUrl () {
       return 'https://rinkeby.etherscan.io/address/' + this.$store.state.comments[this.id].author
@@ -96,15 +116,17 @@ export default {
       this.$refs.editingEditor.submitEdit()
     },
     moderate (value) {
-
-    },
-    edit () {
-
+      this.$store.dispatch(MODERATE_COMMENT.type, {
+        id: this.id,
+        moderated: value
+      })
     }
   }
 }
 </script>
 <style lang="stylus">
+fontSize = 1em
+
 .comment-children
   .comment-children
     margin-left 0.5em
@@ -114,31 +136,48 @@ export default {
   margin-top 1em
   .comment-content
     margin-left 1em
-    .by, .text, .toggle
-      font-size .9em
-    .by
-      color #828282
-      width fit-content
-      a
+    .byline
+      .identicon, .by, .toggle, .edited
+        display inline-block
+        vertical-align middle
+        font-size (0.8 * fontSize)
         color #828282
-        text-decoration none
+      .identicon
+        width 2em
+      .by
+        width fit-content
+        a
+          text-decoration none
+      .toggle
+        background-color #fffbf2
+        padding .3em .3em
+        border-radius 4px
+        a
+          cursor pointer
+        &.open
+          background-color transparent
+      .edited
+        font-style italic
     .text
+      margin 0 0.3em
       overflow-wrap break-word
+      font-size fontSize
       a:hover
         color #ff6600
-      p
-        margin 0.2em 0
     .slide-fade-enter-active 
       transition: all .3s ease
     .slide-fade-enter
       transform translateX(-10px)
       opacity 0
+    .editingEditor
+      margin-top 0.3em
     .md-btns
       text-align right
       .md-btn
         background none
         border none
         color #828282
+        font-size (0.8 * fontSize)
         &:hover
           color black
           text-decoration underline
@@ -151,21 +190,11 @@ export default {
         background none
         border none
         color #828282
+        font-size (0.8 * fontSize)
         &:hover
           color black
           text-decoration underline
           cursor pointer
-    .toggle
-      background-color #fffbf2
-      padding .3em .5em
-      border-radius 4px
-      a
-        color #828282
-        cursor pointer
-      &.open
-        padding 0
-        background-color transparent
-        margin-bottom -0.5em
 </style>
 
 <style lang="stylus">

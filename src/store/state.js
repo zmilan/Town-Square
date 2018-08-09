@@ -1,5 +1,7 @@
 export default {
   comments: {},
-  rootCommentId: 6,
+  names: {},
+  texts: {},
+  rootCommentId: 1,
   account: null
 }

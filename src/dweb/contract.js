@@ -6,8 +6,7 @@ const web3 = new Web3(window.web3.currentProvider)
 const address = process.env.contractAddress
 
 //eslint-disable-next-line
-const abi = [{"name": "__init__", "outputs": [], "inputs": [], "constant": false, "payable": false, "type": "constructor"}, {"name": "startThread", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "address", "name": "_moderator"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 236366}, {"name": "addComment", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "_parent"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 287629}, {"name": "moderateComment", "outputs": [], "inputs": [{"type": "int128", "name": "_commentIndex"}, {"type": "bool", "name": "_moderated"}], "constant": false, "payable": false, "type": "function", "gas": 36166}, {"name": "comments__child", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 874}, {"name": "comments__sibling", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 904}, {"name": "comments__author", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 928}, {"name": "comments__ipfs_hash", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 964}, {"name": "comments__moderator", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 994}, {"name": "comments__moderated", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1024}, {"name": "comments__date_posted", "outputs": [{"type": "uint256", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1054}, {"name": "comment_count", "outputs": [{"type": "int128", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 783}]
-
+const abi = [{"name": "__init__", "outputs": [], "inputs": [], "constant": false, "payable": false, "type": "constructor"}, {"name": "startThread", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "address", "name": "_moderator"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 256378}, {"name": "addComment", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "_parent"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 307641}, {"name": "moderateComment", "outputs": [], "inputs": [{"type": "int128", "name": "_commentIndex"}, {"type": "bool", "name": "_moderated"}], "constant": false, "payable": false, "type": "function", "gas": 36166}, {"name": "editComment", "outputs": [], "inputs": [{"type": "int128", "name": "_commentIndex"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 71353}, {"name": "registerName", "outputs": [], "inputs": [{"type": "bytes32", "name": "_name"}], "constant": false, "payable": false, "type": "function", "gas": 35526}, {"name": "comments__child", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 934}, {"name": "comments__sibling", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 964}, {"name": "comments__author", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 988}, {"name": "comments__ipfs_hash", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1024}, {"name": "comments__moderator", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1054}, {"name": "comments__moderated", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1084}, {"name": "comments__edited", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1114}, {"name": "comments__date_posted", "outputs": [{"type": "uint256", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1144}, {"name": "names", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "address", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1045}, {"name": "comment_count", "outputs": [{"type": "int128", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 903}]
 const contract = new web3.eth.Contract(abi, address)
 
 function ipfsHashToBytes32 (ipfsHash) {
@@ -37,6 +36,7 @@ export default {
       contract.methods.comments__ipfs_hash(index).call(),
       contract.methods.comments__moderator(index).call(),
       contract.methods.comments__moderated(index).call(),
+      contract.methods.comments__edited(index).call(),
       contract.methods.comments__date_posted(index).call()
     ]).then(results => {
       const comment = {
@@ -46,13 +46,41 @@ export default {
         ipfsHash: results[3],
         moderator: results[4],
         moderated: results[5],
-        datePosted: results[6],
+        edited: results[6],
+        datePosted: results[7],
         id: index,
         children: [],
         parent: 0
       }
 
       return comment
+    })
+  },
+
+  getName: function (address) {
+    return contract.methods.names(address).call().then(nameBytes32 => {
+      const ascii = web3.utils.toAscii(nameBytes32)
+      return ascii.replace(/\0/g, '') // strip out null characters /u0000
+    })
+  },
+
+  moderateComment: function (id, moderated, account) {
+    return contract.methods.moderateComment(id, moderated).send({
+      from: account
+    })
+  },
+
+  startThread: function (ipfsHash, account, moderator) {
+    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
+    return contract.methods.startThread(moderator, ipfsBytes32).send({
+      from: account
+    })
+  },
+
+  registerName: function (name, account) {
+    const nameBytes32 = web3.utils.fromAscii(name)
+    return contract.methods.registerName(nameBytes32).send({
+      from: account
     })
   }
 }
