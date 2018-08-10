@@ -35,9 +35,13 @@
 
       <hr class="divider">
       
+      <ul v-if="pending" class="comment-children">
+        <pending-comment v-for="key in pending" :key="key" :id="key"></pending-comment>
+      </ul>
+
       <div class="item-view-comments">
         <p class="item-view-comments-header">
-          {{ children.length ? '' : 'No comments yet.' }}
+          {{ children.length || pending.length ? '' : 'No comments yet.' }}
           <spinner :show="loading"></spinner>
         </p>
         <ul v-if="!loading && rootComment.child" class="comment-children">
@@ -77,6 +81,7 @@ import CreateThreadModal from './components/modals/Create-Thread-Modal'
 import Editor from './components/Editor'
 import Identicon from './components/Identicon'
 import RegisterNameModal from './components/modals/Register-Name-Modal'
+import PendingComment from './components/PendingComment'
 import Spinner from './components/Spinner'
 import { FETCH_COMMENTS, GET_ACCOUNT } from './store/types'
 
@@ -89,6 +94,7 @@ export default {
     Editor,
     Identicon,
     RegisterNameModal,
+    PendingComment,
     Spinner,
     VueMarkdown
   },
@@ -111,13 +117,16 @@ export default {
     },
     text () {
       return this.$store.state.texts[this.$store.state.rootCommentId]
+    },
+    pending () {
+      return this.$store.state.pendingChildren[this.$store.state.rootCommentId] || []
     }
   },
   beforeMount () {
     this.$store.dispatch(GET_ACCOUNT.type)
     this.fetchComments({
       id: this.$store.state.rootCommentId,
-      numberToLoad: 30
+      numberToLoad: 10
     })
   },
   methods: {

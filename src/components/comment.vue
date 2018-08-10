@@ -55,13 +55,17 @@
 
         <transition name="slide-fade">
           <div v-if="replying">
-            <editor ref="replyEditor" :id="id" :autosave="true"></editor>
+            <editor ref="replyEditor" :id="id" :autosave="false"></editor>
             <div class="md-btns">
               <button class="md-btn" @click="replying = false">Cancel</button>
               <button class="md-btn reply" @click="reply">Reply</button>
             </div>
           </div>
         </transition>
+
+        <ul v-if="pending" class="comment-children">
+          <pending-comment v-for="key in pending" :key="key" :id="key"></pending-comment>
+        </ul>
 
         <ul class="comment-children">
           <comment v-for="id in children" :key="id" :id="id"></comment>
@@ -82,6 +86,7 @@ import VueMarkdown from 'vue-markdown'
 
 import Editor from './Editor'
 import Identicon from './Identicon'
+import PendingComment from './PendingComment'
 import { FETCH_COMMENTS, MODERATE_COMMENT } from '../store/types'
 
 export default {
@@ -90,6 +95,7 @@ export default {
   components: {
     Editor,
     Identicon,
+    PendingComment,
     VueMarkdown
   },
   data () {
@@ -108,7 +114,7 @@ export default {
       return this.$store.state.names[this.comment.author]
     },
     etherscanUrl () {
-      return 'https://rinkeby.etherscan.io/address/' + this.$store.state.comments[this.id].author
+      return 'https://rinkeby.etherscan.io/address/' + this.comment.author
     },
     account () {
       return this.$store.state.account
@@ -123,14 +129,19 @@ export default {
       const canLoadChild = this.comment.child && !this.$store.state.comments[this.comment.child]
       const canLoadSibling = this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
       return canLoadChild || canLoadSibling
+    },
+    pending () {
+      return this.$store.state.pendingChildren[this.id]
     }
   },
   methods: {
     reply () {
       this.$refs.replyEditor.submitReply()
+      this.replying = false
     },
     update () {
       this.$refs.editingEditor.submitEdit()
+      this.editing = false
     },
     ...mapActions({
       'fetchComments': FETCH_COMMENTS.type,

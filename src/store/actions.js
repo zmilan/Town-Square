@@ -1,12 +1,36 @@
-import {ADD_COMMENT, CREATE_THREAD, EDIT_COMMENT, FETCH_COMMENT_RESOURCES, FETCH_COMMENT, FETCH_COMMENTS, FETCH_NAME, FETCH_TEXT, GET_ACCOUNT, MODERATE_COMMENT, REGISTER_NAME} from './types'
+import {
+  ADD_COMMENT,
+  ADD_PENDING_COMMENT,
+  CREATE_THREAD,
+  EDIT_COMMENT,
+  FETCH_COMMENT_RESOURCES,
+  FETCH_COMMENT,
+  FETCH_COMMENTS,
+  FETCH_NAME,
+  FETCH_TEXT,
+  GET_ACCOUNT,
+  MODERATE_COMMENT,
+  REGISTER_NAME,
+  REMOVE_PENDING_COMMMENT,
+  UPDATE_PENDING_COMMENT } from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
 import metamask from '../dweb/metamask'
+import STATUS from '../enum/status'
 
 export default {
   [ADD_COMMENT.type] ({ commit, state }, { parent, text }) {
+    // a random key used to reference the pending comment
+    const id = Math.random().toString(36).substring(7)
+    commit(ADD_PENDING_COMMENT.type, { parent, text, id })
+
     return ipfs.setText(text).then(ipfsHash => {
+      commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.PENDING_APPROVAL })
       return contract.addComment(parent, ipfsHash, state.account)
+    }).then(() => {
+      commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.PENDING_TX })
+    }).catch(() => {
+      commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.ERROR })
     })
   },
 
@@ -114,5 +138,9 @@ export default {
 
   [REGISTER_NAME.type] ({ commit, state }, { text }) {
     return contract.registerName(text, state.account)
+  },
+
+  [REMOVE_PENDING_COMMMENT.type] ({ commit, state }, { id }) {
+    commit(REMOVE_PENDING_COMMMENT.type, { id })
   }
 }

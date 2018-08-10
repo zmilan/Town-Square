@@ -33,18 +33,21 @@ export default {
         parent: this.id,
         text: this.content
       })
+      this.content = ''
     },
     submitEdit () {
       this.$store.dispatch(EDIT_COMMENT.type, {
         id: this.id,
         text: this.content
       })
+      this.content = ''
     },
     submitThread (moderator) {
       this.$store.dispatch(CREATE_THREAD.type, {
         moderator,
         text: this.content
       })
+      this.content = ''
     }
   }
 }
