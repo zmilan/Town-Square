@@ -11,6 +11,7 @@ import {
   MODERATE_COMMENT,
   REGISTER_NAME,
   REMOVE_PENDING_COMMMENT,
+  UPDATE_COMMENT_CHILD,
   UPDATE_PENDING_COMMENT } from './types'
 
 import STATUS from '../enum/status'
@@ -90,6 +91,25 @@ export default {
   },
   [REGISTER_NAME.type]: (state, payload) => {
     // TODO
+  },
+  [UPDATE_COMMENT_CHILD.type]: (state, { id, child }) => {
+    // this mutation gets called when a new comment is added by the user.
+    const parent = id
+    state.comments[parent].child = child
+
+    // now set up the parent/child relationship
+    Vue.set(state.parents, child, parent)
+
+    // setup the children array if id doesnt exist yet
+    if (!(state.children[parent] instanceof Array)) {
+      Vue.set(state.children, parent, [])
+    }
+
+    // make sure we're not double adding the child
+    if (state.children[parent].indexOf(child) === -1) {
+      // the child is always the first in the array of children, the rest are accessed as siblings
+      state.children[parent].unshift(child)
+    }
   },
   [REMOVE_PENDING_COMMMENT.type]: (state, { id }) => {
     Vue.set(state.pendingComments, id, null)

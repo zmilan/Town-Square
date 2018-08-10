@@ -12,6 +12,7 @@ import {
   MODERATE_COMMENT,
   REGISTER_NAME,
   REMOVE_PENDING_COMMMENT,
+  UPDATE_COMMENT_CHILD,
   UPDATE_PENDING_COMMENT } from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
@@ -19,7 +20,7 @@ import metamask from '../dweb/metamask'
 import STATUS from '../enum/status'
 
 export default {
-  [ADD_COMMENT.type] ({ commit, state }, { parent, text }) {
+  [ADD_COMMENT.type] ({ commit, state, dispatch }, { parent, text }) {
     // a random key used to reference the pending comment
     const id = Math.random().toString(36).substring(7)
     commit(ADD_PENDING_COMMENT.type, { parent, text, id })
@@ -27,8 +28,22 @@ export default {
     return ipfs.setText(text).then(ipfsHash => {
       commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.PENDING_APPROVAL })
       return contract.addComment(parent, ipfsHash, state.account)
-    }).then(() => {
-      commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.PENDING_TX })
+        .on('transactionHash', () => {
+          commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.PENDING_TX })
+        })
+        .on('receipt', function (receipt) {
+          // load the new comment
+          const newCommentId = Number(receipt.events['Comment'].returnValues[0])
+          commit(UPDATE_COMMENT_CHILD.type, { id: parent, child: newCommentId })
+          dispatch(FETCH_COMMENT.type, { id: newCommentId }).then(() => {
+            // remove the pending comment
+            dispatch(REMOVE_PENDING_COMMMENT.type, { id })
+          })
+        })
+        .on('error', err => {
+          console.error(err)
+          commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.ERROR })
+        })
     }).catch(() => {
       commit(UPDATE_PENDING_COMMENT.type, { id, status: STATUS.ERROR })
     })

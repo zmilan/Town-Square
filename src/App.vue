@@ -28,10 +28,10 @@
             </a>
           </div>        
         </div>
-
-        <editor :id="rootComment.id" ref="replyEditor" :autosave="false"></editor>
-        <button class="add-comment-btn" @click="addComment">add comment</button>
       </div>
+
+      <editor :id="rootComment.id" ref="replyEditor" :autosave="false"></editor>
+      <button class="add-comment-btn" @click="addComment">add comment</button>
 
       <hr class="divider">
       
@@ -60,7 +60,7 @@
         </button>
         |
         <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-          add a pigeon thread to your site
+          add pigeon to your site
         </button>
         |
         <button class="footer-btn" @click="$modal.show('register-name-modal')">
@@ -144,15 +144,16 @@ export default {
 <style lang="stylus" scoped>
 .item-view-header
   background-color #fff
-  // box-shadow 0 0 2px rgba(1,0,0,.1)
-  // box-shadow 5px 5px 1px 2px rgba(0,0,0,.1)
+  display flex
+  flex-direction row
   .identicon
-    display inline-block
-    width 2em
+    flex: 0 0 2em
+    height 2em
     vertical-align top
+    float left
   .title-block
-    display inline-block
-    margin: 0 .3em
+    flex 1
+    margin: 0 0 0.5em 0.5em
     .text
       font-size 1.1em
       overflow-wrap break-word

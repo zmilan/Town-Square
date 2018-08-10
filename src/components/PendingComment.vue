@@ -18,7 +18,7 @@
         <a class="by">
           <a class="status" v-if="status === STATUS.PENDING_IPFS">saving text to IPFS</a>
           <a class="status" v-else-if="status === STATUS.PENDING_APPROVAL">waiting for MetaMask approval</a>
-          <a class="status" v-else-if="status === STATUS.PENDING_TX">Waiting on tx</a>
+          <a class="status" v-else-if="status === STATUS.PENDING_TX">Waiting for block confirmation</a>
           <a class="error-btn" v-else-if="status === STATUS.ERROR">
             Rejected
             <button class="error-btn" @click="retrySubmit()">try again</button>

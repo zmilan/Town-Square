@@ -1,3 +1,6 @@
+
+Comment: event({index: int128, author: indexed(address), _parent: int128})
+
 comments: public({
     child: int128,
     sibling: int128,
@@ -18,7 +21,7 @@ def __init__():
     self.comment_count = 0
 
 @public
-def startThread(_moderator: address, _ipfs_hash: bytes32) -> int128:
+def startThread(_moderator: address, _ipfs_hash: bytes32):
     self.comment_count += 1
     self.comments[self.comment_count] = {
         child: 0,
@@ -31,10 +34,16 @@ def startThread(_moderator: address, _ipfs_hash: bytes32) -> int128:
         date_posted: block.timestamp
     }
     
-    return self.comment_count
+    log.Comment(
+        self.comment_count,
+        msg.sender,
+        0
+    )
+
+    return 
 
 @public
-def addComment(_parent: int128, _ipfs_hash: bytes32) -> int128:
+def addComment(_parent: int128, _ipfs_hash: bytes32):
     assert self.comments[_parent].date_posted > 0
 
     self.comment_count += 1
@@ -52,7 +61,12 @@ def addComment(_parent: int128, _ipfs_hash: bytes32) -> int128:
     
     self.comments[_parent].child = self.comment_count
 
-    return self.comment_count
+    log.Comment(
+        self.comment_count,
+        msg.sender,
+        _parent
+    )
+
     
 @public
 def moderateComment(_commentIndex: int128, _moderated: bool):
