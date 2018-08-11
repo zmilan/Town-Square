@@ -34,10 +34,6 @@
       <button class="add-comment-btn" @click="addComment">add comment</button>
 
       <hr class="divider">
-      
-      <ul v-if="pending" class="comment-children">
-        <pending-comment v-for="key in pending" :key="key" :id="key"></pending-comment>
-      </ul>
 
       <div class="item-view-comments">
         <p class="item-view-comments-header">
@@ -81,7 +77,6 @@ import CreateThreadModal from './components/modals/Create-Thread-Modal'
 import Editor from './components/Editor'
 import Identicon from './components/Identicon'
 import RegisterNameModal from './components/modals/Register-Name-Modal'
-import PendingComment from './components/PendingComment'
 import Spinner from './components/Spinner'
 import { FETCH_COMMENTS, GET_ACCOUNT } from './store/types'
 
@@ -94,7 +89,6 @@ export default {
     Editor,
     Identicon,
     RegisterNameModal,
-    PendingComment,
     Spinner,
     VueMarkdown
   },

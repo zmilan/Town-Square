@@ -10,9 +10,9 @@ import {
   GET_ACCOUNT,
   MODERATE_COMMENT,
   REGISTER_NAME,
-  REMOVE_PENDING_COMMMENT,
+  REMOVE_COMMENT,
   UPDATE_COMMENT_CHILD,
-  UPDATE_PENDING_COMMENT } from './types'
+  UPDATE_COMMENT_STATUS } from './types'
 
 import STATUS from '../enum/status'
 
@@ -26,8 +26,12 @@ function addChildParentRelationship (state, child, parent) {
 
   // make sure we're not double adding the child
   if (state.children[parent].indexOf(child) === -1) {
-    // the state pushes the child
+    // add the child to the array
     state.children[parent].push(child)
+
+    // the ordering of the array needs to be in reverse-chronological order
+    // sort by (descending) comment id since the comment ids iterate in numerical order
+    state.children[parent].sort((a, b) => b - a)
   }
 }
 
@@ -35,17 +39,14 @@ export default {
   [ADD_PENDING_COMMENT.type]: (state, { parent, text, id }) => {
     const pendingComment = {
       author: state.account,
-      text: text,
       status: STATUS.PENDING_IPFS,
-      id: id,
-      parent: parent
+      id: id
     }
 
-    Vue.set(state.pendingComments, id, pendingComment)
-    if (!(state.pendingChildren[parent] instanceof Array)) {
-      Vue.set(state.pendingChildren, parent, [])
-    }
-    state.pendingChildren[parent].unshift(id)
+    Vue.set(state.comments, id, pendingComment)
+    Vue.set(state.texts, id, text)
+
+    addChildParentRelationship(state, id, parent)
   },
   [ADD_COMMENT.type]: (state, { parent, text }) => {
     //
@@ -94,34 +95,26 @@ export default {
   },
   [UPDATE_COMMENT_CHILD.type]: (state, { id, child }) => {
     // this mutation gets called when a new comment is added by the user.
-    const parent = id
-    state.comments[parent].child = child
-
-    // now set up the parent/child relationship
-    Vue.set(state.parents, child, parent)
-
-    // setup the children array if id doesnt exist yet
-    if (!(state.children[parent] instanceof Array)) {
-      Vue.set(state.children, parent, [])
-    }
-
-    // make sure we're not double adding the child
-    if (state.children[parent].indexOf(child) === -1) {
-      // the child is always the first in the array of children, the rest are accessed as siblings
-      state.children[parent].unshift(child)
-    }
+    state.comments[id].child = child
   },
-  [REMOVE_PENDING_COMMMENT.type]: (state, { id }) => {
-    Vue.set(state.pendingComments, id, null)
-    for (let key in state.pendingChildren) {
-      const index = state.pendingChildren[key].indexOf(id)
-      if (index >= 0) {
-        state.pendingChildren[key].splice(index, 1)
-      }
+  [REMOVE_COMMENT.type]: (state, { id, parent }) => {
+    // remove comment from list
+    Vue.set(state.comments, id, null)
+
+    // remove from children array
+    const index = state.children[parent].indexOf(id)
+    if (index >= 0) {
+      state.children[parent].splice(index, 1)
     }
+
+    // remove from parents array
+    state.parents[id] = null
+
+    // remove the text
+    state.texts[id] = null
   },
-  [UPDATE_PENDING_COMMENT.type]: (state, {id, status}) => {
-    Vue.set(state.pendingComments[id], 'status', status)
-    // state.pendingComments[id].status = status
+  [UPDATE_COMMENT_STATUS.type]: (state, {id, status}) => {
+    console.log(id, status)
+    Vue.set(state.comments[id], 'status', status)
   }
 }
