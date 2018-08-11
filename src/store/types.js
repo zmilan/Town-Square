@@ -14,6 +14,7 @@ export const MODERATE_COMMENT = makeAction('MODERATE_COMMENT')
 export const REGISTER_NAME = makeAction('REGISTER_NAME')
 export const REMOVE_COMMENT = makeAction('REMOVE_COMMENT')
 export const UPDATE_COMMENT_CHILD = makeAction('UPDATE_COMMENT_CHILD')
+export const UPDATE_COMMENT_MODERATION = makeAction('UPDATE_COMMENT_MODERATION')
 export const UPDATE_COMMENT_STATUS = makeAction('UPDATE_COMMENT_STATUS')
 
 export const GET_ACCOUNT = makeAction('GET_ACCOUNT')

@@ -37,7 +37,7 @@
 
       <div class="item-view-comments">
         <p class="item-view-comments-header">
-          {{ children.length || pending.length ? '' : 'No comments yet.' }}
+          {{ children.length ? '' : 'No comments yet.' }}
           <spinner :show="loading"></spinner>
         </p>
         <ul v-if="!loading && rootComment.child" class="comment-children">
@@ -111,16 +111,13 @@ export default {
     },
     text () {
       return this.$store.state.texts[this.$store.state.rootCommentId]
-    },
-    pending () {
-      return this.$store.state.pendingChildren[this.$store.state.rootCommentId] || []
     }
   },
   beforeMount () {
     this.$store.dispatch(GET_ACCOUNT.type)
     this.fetchComments({
       id: this.$store.state.rootCommentId,
-      numberToLoad: 10
+      numberToLoad: 5
     })
   },
   methods: {

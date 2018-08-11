@@ -13,6 +13,7 @@ import {
   REGISTER_NAME,
   REMOVE_COMMENT,
   UPDATE_COMMENT_CHILD,
+  UPDATE_COMMENT_MODERATION,
   UPDATE_COMMENT_STATUS } from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
@@ -168,7 +169,19 @@ export default {
   },
 
   [MODERATE_COMMENT.type] ({ commit, state }, { id, moderated }) {
+    commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.MOD_PENDING_APPROVAL })
     return contract.moderateComment(id, moderated, state.account)
+      .on('transactionHash', () => {
+        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.MOD_PENDING_TX })
+      })
+      .on('receipt', function (receipt) {
+        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.SAVED })
+        commit(UPDATE_COMMENT_MODERATION.type, { id, moderated })
+      })
+      .on('error', err => {
+        console.error(err)
+        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
+      })
   },
 
   [REGISTER_NAME.type] ({ commit, state }, { text }) {
@@ -176,7 +189,6 @@ export default {
   },
 
   [REMOVE_COMMENT.type] ({ commit, state }, { id, parent }) {
-    console.log('REMOVE', id, parent)
     commit(REMOVE_COMMENT.type, { id, parent })
   }
 }

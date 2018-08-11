@@ -36,7 +36,7 @@ function pluralize (time, label) {
 }
 
 export function truncate (word) {
-  const length = 6
+  const length = 10
   if (word.length <= length) {
     return word
   } else {

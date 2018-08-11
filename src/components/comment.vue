@@ -1,5 +1,5 @@
 <template>
-  <li v-if="!comment.moderated" class="comment" :class="{ pending: comment.status !== STATUS.SAVED, error: comment.status === STATUS.ERROR, moderated: comment.moderated }">
+  <li class="comment" :class="{ pending: comment.status !== STATUS.SAVED, error: comment.status === STATUS.ERROR, moderated: comment.moderated }">
     <div class="comment-content">
       <div class="byline">
         
@@ -36,8 +36,10 @@
             Rejected
             <button class="error-btn" @click="retryReply()">try again</button>
             |
-            <button class="error-btn" @click="clearError({ id })">clear</button>
+            <button class="error-btn" @click="clearError({ id })">cancel</button>
           </a>
+          <a class="status" v-else-if="comment.status === STATUS.MOD_PENDING_APPROVAL">{{comment.moderated ? 'un-moderating...' : 'moderating...'}} waiting for MetaMask approval</a>
+          <a class="status" v-else-if="comment.status === STATUS.MOD_PENDING_TX">{{comment.moderated ? 'un-moderating...' : 'moderating...'}} Waiting for block confirmation</a>
         </a>
       
       </div>
@@ -68,6 +70,21 @@
 
           <transition name="slide-fade">
             <div v-if="replying">
+              <div class="byline replying-as">
+                
+                <a class="by">replying as:</a>
+                <identicon class="identicon" :address="comment.author"></identicon>
+          
+                <a class="by">
+                  <a v-if="authorName">{{ authorName }}</a>
+                  <a v-else>{{ comment.author | truncate }}</a>
+                </a>
+
+                <button class="md-btn" v-if="!authorName" @click="$modal.show('register-name-modal')">
+                  {use a username}
+                </button>
+              </div>
+
               <editor ref="replyEditor" :id="id" :autosave="false"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="replying = false">Cancel</button>
@@ -80,8 +97,11 @@
             <comment v-for="id in children" :key="id" :id="id"></comment>
           </ul>
 
-          <button v-if="canLoadMore" @click="fetchComments({id, numberToLoad: 30})">
-            load more
+          <button v-if="canLoadSibling" class="md-btn" @click="fetchComments({id: comment.sibling, numberToLoad: 2})">
+            load more <a class="arrow">⬇</a>
+          </button>
+          <button v-if="canLoadChild" class="md-btn" @click="fetchComments({id: comment.child, numberToLoad: 2})">
+            load more <a class="arrow">⬊</a>
           </button>
         </div>
 
@@ -135,10 +155,11 @@ export default {
     text () {
       return this.$store.state.texts[this.id]
     },
-    canLoadMore () {
-      const canLoadChild = this.comment.child && !this.$store.state.comments[this.comment.child]
-      const canLoadSibling = this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
-      return canLoadChild || canLoadSibling
+    canLoadChild () {
+      return this.comment.child && !this.$store.state.comments[this.comment.child]
+    },
+    canLoadSibling () {
+      return this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
     }
   },
   methods: {
@@ -181,13 +202,29 @@ fontSize = 1em
   .comment-children
     margin-left 0.5em
 .moderated
-  // background-color red
+  // background-color green
+.md-btn
+  background none
+  border none
+  color #828282
+  font-size (0.8 * fontSize)
+  &:hover
+    color black
+    text-decoration underline
+    cursor pointer
 .comment
   position relative
   border-left 1px solid #eee
   margin-top 1em
   .comment-content
     margin-left 1em
+    .arrow
+      font-size 1.5em
+      position relative
+      top: 0.3em
+    .replying-as
+      width 100%
+      text-align right
     .byline
       .identicon, .by, .toggle, .edited
         display inline-block
@@ -254,15 +291,6 @@ fontSize = 1em
       margin-top 0.3em
     .md-btns
       text-align right
-      .md-btn
-        background none
-        border none
-        color #828282
-        font-size (0.8 * fontSize)
-        &:hover
-          color black
-          text-decoration underline
-          cursor pointer
       .reply, .update
         color black
         text-decoration underline

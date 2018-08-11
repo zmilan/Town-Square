@@ -12,6 +12,7 @@ import {
   REGISTER_NAME,
   REMOVE_COMMENT,
   UPDATE_COMMENT_CHILD,
+  UPDATE_COMMENT_MODERATION,
   UPDATE_COMMENT_STATUS } from './types'
 
 import STATUS from '../enum/status'
@@ -113,8 +114,10 @@ export default {
     // remove the text
     state.texts[id] = null
   },
+  [UPDATE_COMMENT_MODERATION.type]: (state, { id, moderated }) => {
+    Vue.set(state.comments[id], 'moderated', moderated)
+  },
   [UPDATE_COMMENT_STATUS.type]: (state, {id, status}) => {
-    console.log(id, status)
     Vue.set(state.comments[id], 'status', status)
   }
 }
