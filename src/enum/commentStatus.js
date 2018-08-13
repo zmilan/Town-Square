@@ -1,12 +1,15 @@
-const STATUS = {
+const COMMENT_STATUS = {
   PENDING_IPFS: Symbol('PENDING_IPFS'),
   PENDING_APPROVAL: Symbol('PENDING_APPROVAL'),
   PENDING_TX: Symbol('PENDING_TX'),
+  ERROR: Symbol('ERROR'),
+
   MOD_PENDING_APPROVAL: Symbol('MOD_PENDING_APPROVAL'),
   MOD_PENDING_TX: Symbol('MOD_PENDING_TX'),
-  ERROR: Symbol('ERROR'),
+  MOD_ERROR: Symbol('MOD_ERROR'),
+
   SAVED: Symbol('SAVED')
 }
-Object.freeze(STATUS)
+Object.freeze(COMMENT_STATUS)
 
-export default STATUS
+export default COMMENT_STATUS

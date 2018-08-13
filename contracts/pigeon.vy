@@ -69,9 +69,11 @@ def addComment(_parent: int128, _ipfs_hash: bytes32):
 
     
 @public
-def moderateComment(_commentIndex: int128, _moderated: bool):
+def moderateComment(_commentIndex: int128):
     assert msg.sender == self.comments[_commentIndex].moderator
-    self.comments[_commentIndex].moderated = _moderated
+    self.comments[_commentIndex].moderated = True
+    self.comments[_commentIndex].author = 0
+    self.comments[_commentIndex].ipfsHash = 0
 
 @public
 def editComment(_commentIndex: int128, _ipfs_hash: bytes32):

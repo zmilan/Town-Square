@@ -18,11 +18,19 @@ export default {
     if (hashStr === 'QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51') { // The hash value for 0x000000...
       return Promise.resolve('')
     } else {
-      // return ipfs.cat(hashStr)
       return ipfs.get(hashStr).then(data => {
         const text = new TextDecoder('utf-8').decode(data[0].content)
         return text
       })
     }
   }
+  // ,
+  // getVersion: host => {
+  //   return axios({
+  //     method: 'GET',
+  //     url: '/api/v0/version',
+  //     baseURL: host,
+  //     params: { number: true },
+  //   })
+  // }
 }

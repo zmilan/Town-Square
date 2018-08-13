@@ -1,6 +1,6 @@
 import bs58 from 'bs58'
 import Web3 from 'web3'
-import STATUS from '../enum/status'
+import COMMENT_STATUS from '../enum/commentStatus'
 // overrides metamask v0.2 for our v 1.0
 const web3 = new Web3(window.web3.currentProvider)
 
@@ -49,7 +49,7 @@ export default {
         moderated: results[5],
         edited: results[6],
         datePosted: results[7],
-        status: STATUS.SAVED,
+        status: COMMENT_STATUS.SAVED,
         id: index
       }
 
@@ -58,14 +58,18 @@ export default {
   },
 
   getName: function (address) {
-    return contract.methods.names(address).call().then(nameBytes32 => {
-      const ascii = web3.utils.toAscii(nameBytes32)
-      return ascii.replace(/\0/g, '') // strip out null characters /u0000
-    })
+    if (address === '0x0000000000000000000000000000000000000000') {
+      return Promise.resolve('[removed]')
+    } else {
+      return contract.methods.names(address).call().then(nameBytes32 => {
+        const ascii = web3.utils.toAscii(nameBytes32)
+        return ascii.replace(/\0/g, '') // strip out null characters /u0000
+      })
+    }
   },
 
-  moderateComment: function (id, moderated, account) {
-    return contract.methods.moderateComment(id, moderated).send({
+  moderateComment: function (id, account) {
+    return contract.methods.moderateComment(id).send({
       from: account
     })
   },

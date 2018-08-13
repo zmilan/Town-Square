@@ -1,9 +1,9 @@
 export default {
+  children: {},
   comments: {},
+  ethAddress: null,
   names: {},
   texts: {},
-  children: {},
   parents: {},
-  rootCommentId: 1,
-  account: null
+  rootCommentId: 1
 }

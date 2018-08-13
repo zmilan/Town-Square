@@ -10,8 +10,8 @@
         <identicon :address="rootComment.author" class="identicon"></identicon>
         
         <div class="title-block">
-          <div v-if="text">
-            <vue-markdown v-once class="text">{{ text }}</vue-markdown>
+          <div v-if="text && text.value">
+            <vue-markdown v-once class="text">{{ text.value }}</vue-markdown>
           </div>
 
           <div class="byline">
@@ -50,18 +50,25 @@
 
       <hr class="divider">
 
-      <div class="item-view-footer">
-        <button class="logo footer-btn" @click="$modal.show('about-pigeon-modal')">
-          🕊️pigeon
-        </button>
-        |
-        <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-          add pigeon to your site
-        </button>
-        |
-        <button class="footer-btn" @click="$modal.show('register-name-modal')">
-          register your name
-        </button>
+      <div>
+        <span>
+          <button class="logo footer-btn" @click="$modal.show('about-pigeon-modal')">
+            🕊️pigeon
+          </button>
+          |
+          <button class="footer-btn" @click="$modal.show('create-thread-modal')">
+            add pigeon to your site
+          </button>
+          |
+          <button class="footer-btn" @click="$modal.show('register-name-modal')">
+            register your name
+          </button>
+        </span>
+        <div class="footer-right">
+          <button class="footer-btn footer-btn-right">
+            version {{version}}
+          </button>
+        </div>
       </div>
     </template>
   </div>
@@ -78,7 +85,7 @@ import Editor from './components/Editor'
 import Identicon from './components/Identicon'
 import RegisterNameModal from './components/modals/Register-Name-Modal'
 import Spinner from './components/Spinner'
-import { FETCH_COMMENTS, GET_ACCOUNT } from './store/types'
+import { FETCH_COMMENTS, FETCH_ETH_ADDRESS } from './store/types'
 
 export default {
   name: 'app',
@@ -111,10 +118,13 @@ export default {
     },
     text () {
       return this.$store.state.texts[this.$store.state.rootCommentId]
+    },
+    version () {
+      return process.env.version
     }
   },
   beforeMount () {
-    this.$store.dispatch(GET_ACCOUNT.type)
+    this.$store.dispatch(FETCH_ETH_ADDRESS)
     this.fetchComments({
       id: this.$store.state.rootCommentId,
       numberToLoad: 5
@@ -125,7 +135,7 @@ export default {
       this.$refs.replyEditor.submitReply()
     },
     ...mapActions({
-      'fetchComments': FETCH_COMMENTS.type
+      'fetchComments': FETCH_COMMENTS
     })
   }
 }
@@ -194,10 +204,16 @@ export default {
     color black
     text-decoration underline
     cursor pointer
+.footer-right
+  float right
+.footer-btn-right
+  color #ddd
 @media (max-width 600px)
   .item-view-header
     h1
       font-size 1.25em
+  .footer-right
+    float none
 </style>
 
 <style lang="stylus">

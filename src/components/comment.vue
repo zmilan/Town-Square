@@ -1,5 +1,5 @@
 <template>
-  <li class="comment" :class="{ pending: comment.status !== STATUS.SAVED, error: comment.status === STATUS.ERROR, moderated: comment.moderated }">
+  <li class="comment" :class="{ pending: comment.status !== COMMENT_STATUS.SAVED, error: (comment.status === COMMENT_STATUS.ERROR || comment.status === COMMENT_STATUS.MOD_ERROR), moderated: comment.moderated }">
     <div class="comment-content">
       <div class="byline">
         
@@ -17,43 +17,63 @@
         </a>
 
         <a class="toggle" :class="{ open }">
-          <a @click="open = !open">{{
-            open
+          <a @click="open = !open">
+            {{open
                 ? '[-]'
-                : '[+] collapsed'
-          }}</a>
+                : '[+] collapsed'}}
+          </a>
         </a>
 
-        <a class="edited" v-if="comment.edited && open">
+        <a class="edited" v-if="comment.edited && open && !comment.moderated">
           *edited
         </a>
 
-        <a v-if="comment.status !== STATUS.SAVED" class="by">
-          <a class="status" v-if="comment.status === STATUS.PENDING_IPFS">saving text to IPFS</a>
-          <a class="status" v-else-if="comment.status === STATUS.PENDING_APPROVAL">waiting for MetaMask approval</a>
-          <a class="status" v-else-if="comment.status === STATUS.PENDING_TX">Waiting for block confirmation</a>
-          <a class="error-status" v-else-if="comment.status === STATUS.ERROR">
+        <a class="moderated" v-if="comment.moderated">
+          Content has been moderated*
+        </a>
+
+        <a v-if="comment.status !== COMMENT_STATUS.SAVED" class="by">
+          <a class="status" v-if="comment.status === COMMENT_STATUS.PENDING_IPFS">saving text to IPFS</a>
+          <a class="status" v-else-if="comment.status === COMMENT_STATUS.PENDING_APPROVAL">waiting for MetaMask approval</a>
+          <a class="status" v-else-if="comment.status === COMMENT_STATUS.PENDING_TX">Waiting for block confirmation</a>
+          <a class="error-status" v-else-if="comment.status === COMMENT_STATUS.ERROR">
             Rejected
             <button class="error-btn" @click="retryReply()">try again</button>
             |
             <button class="error-btn" @click="clearError({ id })">cancel</button>
           </a>
-          <a class="status" v-else-if="comment.status === STATUS.MOD_PENDING_APPROVAL">{{comment.moderated ? 'un-moderating...' : 'moderating...'}} waiting for MetaMask approval</a>
-          <a class="status" v-else-if="comment.status === STATUS.MOD_PENDING_TX">{{comment.moderated ? 'un-moderating...' : 'moderating...'}} Waiting for block confirmation</a>
+          <a class="error-status" v-else-if="comment.status === COMMENT_STATUS.MOD_ERROR">
+            Rejected
+            <button class="error-btn" @click="moderate({ id })">try again</button>
+            |
+            <button class="error-btn" @click="clearError({ id })">cancel</button>
+          </a>
+          <a class="status" v-else-if="comment.status === COMMENT_STATUS.MOD_PENDING_APPROVAL">
+            {{comment.moderated 
+              ? 'un-moderating...' 
+              : 'moderating...'}} 
+            waiting for MetaMask approval
+          </a>
+          <a class="status" v-else-if="comment.status === COMMENT_STATUS.MOD_PENDING_TX">
+            {{comment.moderated 
+              ? 'un-moderating...'
+              : 'moderating...'}}
+            Waiting for block confirmation
+          </a>
         </a>
       
       </div>
 
       <div v-show="open">
 
-        <div v-if="text && !editing">
-          <vue-markdown class="text">{{ text }}</vue-markdown>
+        <div v-if="text && text.value && !editing && !comment.moderated">
+          <vue-markdown class="text">{{ text.value }}</vue-markdown>
         </div>
 
-        <div v-if="comment.status === STATUS.SAVED">
+        <div v-if="comment.status === COMMENT_STATUS.SAVED">
           <transition name="slide-fade">
             <div v-if="editing">
-              <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text"></editor>
+              <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text.value"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="editing = false">Cancel</button>
                 <button class="md-btn update" @click="update">Update</button>
@@ -62,10 +82,22 @@
           </transition>
 
           <div class="action-btns" v-if="!replying && !editing">
-            <button class="action-btn" @click="replying = true">reply</button>
-            <button class="action-btn" v-if="account == comment.author" @click="editing = true">edit</button>
-            <button class="action-btn" v-if="account == comment.moderator && !comment.moderated" @click="moderate({ id, moderated: true })">moderate</button>
-            <button class="action-btn" v-if="account == comment.moderator && comment.moderated" @click="moderate({ id, moderated: false })">unmoderate</button>
+            <button class="action-btn" 
+              @click="replying = true">
+              reply
+            </button>
+            <button class="action-btn" v-if="ethAddress == comment.author && !comment.moderated" 
+              @click="editing = true">
+              edit
+            </button>
+            <button class="action-btn" v-if="ethAddress == comment.moderator && !comment.moderated" 
+              @click="moderate({ id })">
+              moderate
+              </button>
+            <!-- <button class="action-btn" v-if="account == comment.moderator && comment.moderated" 
+              @click="moderate({ id, moderated: false })">
+              unmoderate
+            </button> -->
           </div>
 
           <transition name="slide-fade">
@@ -117,7 +149,7 @@ import VueMarkdown from 'vue-markdown'
 import Editor from './Editor'
 import Identicon from './Identicon'
 import { FETCH_COMMENTS, MODERATE_COMMENT, EDIT_COMMENT, REMOVE_COMMENT, FETCH_COMMENT } from '../store/types'
-import STATUS from '../enum/status'
+import COMMENT_STATUS from '../enum/commentStatus'
 
 export default {
   name: 'comment',
@@ -133,8 +165,12 @@ export default {
       editing: false,
       replying: false,
       showDetails: false,
-      STATUS
+      COMMENT_STATUS,
+      overrideModeration: false
     }
+  },
+  mounted () {
+    this.open = !this.$store.state.comments[this.id].moderated
   },
   computed: {
     comment () {
@@ -146,8 +182,8 @@ export default {
     etherscanUrl () {
       return 'https://rinkeby.etherscan.io/address/' + this.comment.author
     },
-    account () {
-      return this.$store.state.account
+    ethAddress () {
+      return this.$store.state.ethAddress
     },
     children () {
       return this.$store.state.children[this.id] || []
@@ -172,9 +208,9 @@ export default {
       this.editing = false
     },
     retryReply () {
-      this.$store.dispatch(EDIT_COMMENT.type, {
+      this.$store.dispatch(EDIT_COMMENT, {
         id: this.id,
-        text: this.text
+        text: this.text.value
       })
     },
     clearError () {
@@ -182,10 +218,10 @@ export default {
       this.fetchComment({ id: this.id })
     },
     ...mapActions({
-      'removeComment': REMOVE_COMMENT.type,
-      'fetchComment': FETCH_COMMENT.type,
-      'fetchComments': FETCH_COMMENTS.type,
-      'moderate': MODERATE_COMMENT.type
+      'removeComment': REMOVE_COMMENT,
+      'fetchComment': FETCH_COMMENT,
+      'fetchComments': FETCH_COMMENTS,
+      'moderate': MODERATE_COMMENT
     })
   }
 }
@@ -201,8 +237,6 @@ fontSize = 1em
 .comment-children
   .comment-children
     margin-left 0.5em
-.moderated
-  // background-color green
 .md-btn
   background none
   border none
@@ -282,6 +316,10 @@ fontSize = 1em
       font-size fontSize
       a:hover
         color #ff6600
+    .moderated
+      color #828282
+      font-style italic
+      font-size (0.8 * fontSize)
     .slide-fade-enter-active 
       transition: all .3s ease
     .slide-fade-enter

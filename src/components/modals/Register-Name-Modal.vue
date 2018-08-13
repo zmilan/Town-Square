@@ -25,7 +25,7 @@ export default {
   methods: {
     submit () {
       console.log(this.content, '======')
-      this.$store.dispatch(REGISTER_NAME.type, {
+      this.$store.dispatch(REGISTER_NAME, {
         text: this.content
       })
     }

@@ -39,7 +39,7 @@ export default {
     submit () {
       let moderator
       if (this.modType === 'self') {
-        moderator = this.$store.state.account
+        moderator = this.$store.state.ethAddress
       } else if (this.modType === 'friend') {
         //
       } else {

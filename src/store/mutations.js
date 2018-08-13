@@ -1,21 +1,6 @@
 import Vue from 'vue'
 
-import {
-  ADD_COMMENT,
-  ADD_PENDING_COMMENT,
-  EDIT_COMMENT,
-  FETCH_COMMENT,
-  FETCH_NAME,
-  FETCH_TEXT,
-  GET_ACCOUNT,
-  MODERATE_COMMENT,
-  REGISTER_NAME,
-  REMOVE_COMMENT,
-  UPDATE_COMMENT_CHILD,
-  UPDATE_COMMENT_MODERATION,
-  UPDATE_COMMENT_STATUS } from './types'
-
-import STATUS from '../enum/status'
+import STATUS from '../enum/commentStatus'
 
 function addChildParentRelationship (state, child, parent) {
   Vue.set(state.parents, child, parent)
@@ -37,30 +22,15 @@ function addChildParentRelationship (state, child, parent) {
 }
 
 export default {
-  [ADD_PENDING_COMMENT.type]: (state, { parent, text, id }) => {
-    const pendingComment = {
-      author: state.account,
-      status: STATUS.PENDING_IPFS,
-      id: id
-    }
-
-    Vue.set(state.comments, id, pendingComment)
-    Vue.set(state.texts, id, text)
-
-    addChildParentRelationship(state, id, parent)
-  },
-  [ADD_COMMENT.type]: (state, { parent, text }) => {
-    //
-  },
-  [EDIT_COMMENT.type]: (state, payload) => {
-    // TODO
-  },
-  [FETCH_COMMENT.type]: (state, { comment }) => {
+  SET_COMMENT: (state, { comment }) => {
+    // add the comment to the list
     Vue.set(state.comments, comment.id, comment)
 
+    // add the parent/child relationship for this comment
     for (let id in state.comments) {
       const otherComment = state.comments[id]
 
+      // if the new comment is a sibling, then otherComment has the same parent
       if (otherComment.sibling === comment.id) {
         const child = comment.id
         const parent = state.parents[otherComment.id]
@@ -69,6 +39,7 @@ export default {
         }
         break
       }
+      // if the new comment is the child, then otherComment is the parent
       if (otherComment.child === comment.id) {
         const child = comment.id
         const parent = otherComment.id
@@ -79,26 +50,49 @@ export default {
       }
     }
   },
-  [FETCH_NAME.type]: (state, { address, name }) => {
+  // SET_COMMENT_CHILD: (state, { id, child }) => {
+  //   // this mutation gets called when a new comment is added by the user.
+  //   state.comments[id].child = child
+  // },
+  SET_COMMENT_MODERATION: (state, { id, moderated }) => {
+    Vue.set(state.comments[id], 'moderated', moderated)
+  },
+  SET_COMMENT_STATUS: (state, {id, status}) => {
+    Vue.set(state.comments[id], 'status', status)
+  },
+  SET_ETH_ADDRESS: (state, { ethAddress }) => {
+    state.ethAddress = ethAddress
+  },
+  SET_NAME: (state, { address, name }) => {
     Vue.set(state.names, address, name)
   },
-  [FETCH_TEXT.type]: (state, { id, text }) => {
+  SET_PLACEHOLDER_COMMENT: (state, { parent, text, id }) => {
+    const placeholderComment = {
+      author: state.ethAddress,
+      status: STATUS.PENDING_IPFS,
+      id: id
+    }
+
+    Vue.set(state.comments, id, placeholderComment)
     Vue.set(state.texts, id, text)
+
+    addChildParentRelationship(state, id, parent)
   },
-  [GET_ACCOUNT.type]: (state, { account }) => {
-    state.account = account
+  SET_TEXT_STATUS: (state, { id, status }) => {
+    if (!state.texts[id]) {
+      // text object doesn't exist yet, go ahead and create it
+      Vue.set(state.texts, id, { status })
+    }
+    Vue.set(state.texts[id], 'status', status)
   },
-  [MODERATE_COMMENT.type]: (state, payload) => {
-    // TODO
+  SET_TEXT_VALUE: (state, { id, value }) => {
+    if (!state.texts[id]) {
+      // text object doesn't exist yet, go ahead and create it
+      Vue.set(state.texts, id, { value })
+    }
+    Vue.set(state.texts[id], 'value', value)
   },
-  [REGISTER_NAME.type]: (state, payload) => {
-    // TODO
-  },
-  [UPDATE_COMMENT_CHILD.type]: (state, { id, child }) => {
-    // this mutation gets called when a new comment is added by the user.
-    state.comments[id].child = child
-  },
-  [REMOVE_COMMENT.type]: (state, { id, parent }) => {
+  UNSET_COMMENT: (state, { id, parent }) => {
     // remove comment from list
     Vue.set(state.comments, id, null)
 
@@ -113,11 +107,5 @@ export default {
 
     // remove the text
     state.texts[id] = null
-  },
-  [UPDATE_COMMENT_MODERATION.type]: (state, { id, moderated }) => {
-    Vue.set(state.comments[id], 'moderated', moderated)
-  },
-  [UPDATE_COMMENT_STATUS.type]: (state, {id, status}) => {
-    Vue.set(state.comments[id], 'status', status)
   }
 }

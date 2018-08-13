@@ -1,124 +1,62 @@
-import {
-  ADD_COMMENT,
-  ADD_PENDING_COMMENT,
-  CREATE_THREAD,
-  EDIT_COMMENT,
-  FETCH_COMMENT_RESOURCES,
-  FETCH_COMMENT,
-  FETCH_COMMENTS,
-  FETCH_NAME,
-  FETCH_TEXT,
-  GET_ACCOUNT,
-  MODERATE_COMMENT,
-  REGISTER_NAME,
-  REMOVE_COMMENT,
-  UPDATE_COMMENT_CHILD,
-  UPDATE_COMMENT_MODERATION,
-  UPDATE_COMMENT_STATUS } from './types'
+import * as types from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
 import metamask from '../dweb/metamask'
-import STATUS from '../enum/status'
+import COMMENT_STATUS from '../enum/commentStatus'
+import TEXT_STATUS from '../enum/textStatus'
 
 export default {
-  [ADD_COMMENT.type] ({ commit, state, dispatch }, { parent, text }) {
-    const id = 1e6
-    commit(ADD_PENDING_COMMENT.type, { parent, text, id })
-
-    return ipfs.setText(text).then(ipfsHash => {
-      commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.PENDING_APPROVAL })
-      return contract.addComment(parent, ipfsHash, state.account)
-        .on('transactionHash', () => {
-          commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.PENDING_TX })
-        })
-        .on('receipt', function (receipt) {
-          // load the new comment
-          const newCommentId = Number(receipt.events.Comment.returnValues[0])
-          commit(UPDATE_COMMENT_CHILD.type, { id: parent, child: newCommentId })
-          dispatch(FETCH_COMMENT.type, { id: newCommentId }).then(() => {
-            // remove the pending comment
-            commit(REMOVE_COMMENT.type, { id, parent })
-          })
-        })
-        .on('error', err => {
-          console.error(err)
-          commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
-        })
-    }).catch(() => {
-      commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
-    })
-  },
-
-  [CREATE_THREAD.type] ({ commit, state }, { moderator, text }) {
-    return ipfs.setText(text).then(ipfsHash => {
-      return contract.startThread(ipfsHash, state.account, moderator)
-    })
-  },
-
-  [EDIT_COMMENT.type] ({ commit, state, dispatch }, { id, text }) {
-    // a random key used to reference the pending comment
-    // const pid = Math.random().toString(36).substring(7)
-
+  [types.EDIT_COMMENT]: ({ commit, state, dispatch }, { id, text }) => {
     const parent = state.parents[id]
-    commit(REMOVE_COMMENT.type, { id, parent })
-    commit(ADD_PENDING_COMMENT.type, { parent, text, id })
+    commit('UNSET_COMMENT', { id, parent })
+    commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
 
     return ipfs.setText(text).then(ipfsHash => {
-      commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.PENDING_APPROVAL })
-      return contract.editComment(id, ipfsHash, state.account)
+      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_APPROVAL })
+      return contract.editComment(id, ipfsHash, state.ethAddress)
         .on('transactionHash', () => {
-          commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.PENDING_TX })
+          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_TX })
         })
         .on('receipt', function (receipt) {
-          // remove the pending comment
-          commit(REMOVE_COMMENT.type, { id, parent })
+          // remove the placeholder comment
+          commit('UNSET_COMMENT', { id, parent })
           // load the new comment
-          dispatch(FETCH_COMMENT.type, { id: id })
+          dispatch(types.FETCH_COMMENT, { id: id })
         })
         .on('error', err => {
           console.error(err)
-          commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
+          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
         })
     }).catch(() => {
-      commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
+      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
     })
   },
 
-  [FETCH_COMMENT_RESOURCES.type] ({ state, dispatch }, { comment }) {
-    if (comment) {
-      dispatch(FETCH_NAME.type, { address: comment.author })
-      if (comment.author !== comment.moderator) {
-        dispatch(FETCH_NAME.type, { address: comment.moderator })
-      }
-      dispatch(FETCH_TEXT.type, { id: comment.id })
-    }
-  },
-
-  [FETCH_COMMENT.type] ({ commit, state, dispatch }, { id }) {
+  [types.FETCH_COMMENT]: ({ commit, state, dispatch }, { id }) => {
     return contract.getComment(id).then(comment => {
-      commit(FETCH_COMMENT.type, { comment })
-      dispatch(FETCH_COMMENT_RESOURCES.type, { comment })
+      commit('SET_COMMENT', { comment })
+      dispatch(types.FETCH_COMMENT_RESOURCES, { comment })
     })
   },
 
-  [FETCH_COMMENTS.type] ({ state, dispatch }, { id, numberToLoad }) {
+  [types.FETCH_COMMENTS]: ({ state, dispatch }, { id, numberToLoad }) => {
     const comment = state.comments[id]
     if (!comment) {
       // if the parent comment doesn't exist, go get it then run this function again
-      dispatch(FETCH_COMMENT.type, { id }).then(() => {
+      dispatch(types.FETCH_COMMENT, { id }).then(() => {
         numberToLoad--
-        dispatch(FETCH_COMMENTS.type, { id, numberToLoad })
+        dispatch(types.FETCH_COMMENTS, { id, numberToLoad })
       })
     } else {
       if (comment.child && numberToLoad > 0) {
         console.log(`(${numberToLoad})`, comment.id + ' -> ' + comment.child)
         numberToLoad--
         // get the child comment
-        dispatch(FETCH_COMMENT.type, {
+        dispatch(types.FETCH_COMMENT, {
           id: comment.child
         }).then(() => {
           // recusively call this function with the child comment
-          dispatch(FETCH_COMMENTS.type, {
+          dispatch(types.FETCH_COMMENTS, {
             id: comment.child,
             numberToLoad
           })
@@ -129,11 +67,11 @@ export default {
         console.log(`(${numberToLoad})`, comment.id + ' -> ' + comment.sibling)
         numberToLoad--
         // get the sibling comment
-        dispatch(FETCH_COMMENT.type, {
+        dispatch(types.FETCH_COMMENT, {
           id: comment.sibling
         }).then(() => {
           // recusively call this function with the sibling comment
-          dispatch(FETCH_COMMENTS.type, {
+          dispatch(types.FETCH_COMMENTS, {
             id: comment.sibling,
             numberToLoad
           })
@@ -142,53 +80,102 @@ export default {
     }
   },
 
-  [FETCH_NAME.type] ({ commit, state }, { address }) {
-    if (state.names[address]) {
-      return state.names[address]
-    } else {
-      return contract.getName(address).then(name => {
-        commit(FETCH_NAME.type, { address, name })
-      })
+  [types.FETCH_COMMENT_RESOURCES]: ({ state, dispatch }, { comment }) => {
+    if (comment) {
+      dispatch(types.FETCH_NAME, { address: comment.author })
+      if (comment.author !== comment.moderator) {
+        dispatch(types.FETCH_NAME, { address: comment.moderator })
+      }
+      dispatch(types.FETCH_TEXT, { id: comment.id })
     }
   },
 
-  [FETCH_TEXT.type] ({ commit, state }, { id }) {
-    const ipfsHash = state.comments[id].ipfsHash
-    return ipfs.getText(ipfsHash).then(text => {
-      commit(FETCH_TEXT.type, { id, text })
-    })
-  },
-
-  [GET_ACCOUNT.type] ({ commit, state }) {
+  [types.FETCH_ETH_ADDRESS]: ({ commit, state }) => {
     return metamask.getAccounts().then(accounts => {
       console.log(accounts)
       if (accounts && accounts[0]) {
-        commit(GET_ACCOUNT.type, { account: accounts[0] })
+        commit('SET_ETH_ADDRESS', { ethAddress: accounts[0] })
       }
     })
   },
 
-  [MODERATE_COMMENT.type] ({ commit, state }, { id, moderated }) {
-    commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.MOD_PENDING_APPROVAL })
-    return contract.moderateComment(id, moderated, state.account)
+  [types.FETCH_NAME]: ({ commit, state }, { address }) => {
+    if (state.names[address]) {
+      return state.names[address]
+    } else {
+      return contract.getName(address).then(name => {
+        commit('SET_NAME', { address, name })
+      })
+    }
+  },
+
+  [types.FETCH_TEXT]: ({ commit, state }, { id }) => {
+    const ipfsHash = state.comments[id].ipfsHash
+    commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.FETCHING })
+    return ipfs.getText(ipfsHash).then(text => {
+      commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.SUCCESS })
+      commit('SET_TEXT_VALUE', { id, value: text })
+    }).catch(err => {
+      console.error(err)
+      commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.ERROR })
+    })
+  },
+
+  [types.MODERATE_COMMENT]: ({ commit, state }, { id }) => {
+    commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_PENDING_APPROVAL })
+    return contract.moderateComment(id, state.ethAddress)
       .on('transactionHash', () => {
-        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.MOD_PENDING_TX })
+        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_PENDING_TX })
       })
       .on('receipt', function (receipt) {
-        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.SAVED })
-        commit(UPDATE_COMMENT_MODERATION.type, { id, moderated })
+        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.SAVED })
+        commit('SET_COMMENT_MODERATION', { id })
       })
       .on('error', err => {
         console.error(err)
-        commit(UPDATE_COMMENT_STATUS.type, { id, status: STATUS.ERROR })
+        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_ERROR })
       })
   },
 
-  [REGISTER_NAME.type] ({ commit, state }, { text }) {
-    return contract.registerName(text, state.account)
+  [types.PUBLISH_COMMENT]: ({ commit, state, dispatch }, { parent, text }) => {
+    const id = 1e6
+    commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
+
+    return ipfs.setText(text).then(ipfsHash => {
+      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_APPROVAL })
+      return contract.addComment(parent, ipfsHash, state.ethAddress)
+        .on('transactionHash', () => {
+          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_TX })
+        })
+        .on('receipt', function (receipt) {
+          // load the new comment
+          const newCommentId = Number(receipt.events.Comment.returnValues[0])
+          // commit('SET_COMMENT_CHILD', { id: parent, child: newCommentId })
+          dispatch(types.FETCH_COMMENT, { id: newCommentId }).then(() => {
+            // remove the placeholder comment
+            commit('UNSET_COMMENT', { id, parent })
+          })
+        })
+        .on('error', err => {
+          console.error(err)
+          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
+        })
+    }).catch(() => {
+      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
+    })
   },
 
-  [REMOVE_COMMENT.type] ({ commit, state }, { id, parent }) {
-    commit(REMOVE_COMMENT.type, { id, parent })
+  [types.PUBLISH_THREAD]: ({ commit, state }, { moderator, text }) => {
+    return ipfs.setText(text).then(ipfsHash => {
+      return contract.startThread(ipfsHash, state.ethAddress, moderator)
+    })
+  },
+
+  [types.REGISTER_NAME]: ({ commit, state }, { text }) => {
+    return contract.registerName(text, state.ethAddress)
+  },
+
+  [types.REMOVE_COMMENT]: ({ commit, state }, { id, parent }) => {
+    commit('UNSET_COMMENT', { id, parent })
   }
 }
