@@ -1,15 +1,13 @@
 
-Comment: event({index: int128, author: indexed(address), _parent: int128})
+Comment: event({index: int128, author: indexed(address), _parent: indexed(int128), ipfs_hash: bytes32})
+Edit: event({index: indexed(int128), ipfs_hash: bytes32})
+Moderate: event({index: indexed(int128)})
+Name: event({person: indexed(address), name: bytes32})
 
 comments: public({
-    child: int128,
-    sibling: int128,
-    author: address,
-    ipfs_hash: bytes32,
     moderator: address,
-    moderated: bool,
-    edited: bool,
-    date_posted: timestamp
+    author: address,
+    exclusive: bool
 }[int128])
 
 names: public(bytes32[address])
@@ -21,66 +19,64 @@ def __init__():
     self.comment_count = 0
 
 @public
-def startThread(_moderator: address, _ipfs_hash: bytes32):
+def startThread(_moderator: address, _exclusive: bool, _ipfs_hash: bytes32):
     self.comment_count += 1
     self.comments[self.comment_count] = {
-        child: 0,
-        sibling: 0,
         author: msg.sender,
-        ipfs_hash: _ipfs_hash,
-        moderator: _moderator,
-        moderated: False,
-        edited: False,
-        date_posted: block.timestamp
+        exclusive: _exclusive,
+        moderator: _moderator
     }
     
     log.Comment(
         self.comment_count,
         msg.sender,
-        0
+        0,
+        _ipfs_hash
     )
 
     return 
 
 @public
 def addComment(_parent: int128, _ipfs_hash: bytes32):
-    assert self.comments[_parent].date_posted > 0
+    assert self.comments[_parent].author != 0x0000000000000000000000000000000000000000
+    assert not self.comments[_parent].exclusive or self.comments[_parent].moderator == msg.sender
 
     self.comment_count += 1
 
     self.comments[self.comment_count] = {
-        child: 0,
-        sibling: self.comments[_parent].child,
         author: msg.sender,
-        ipfs_hash: _ipfs_hash,
-        moderator: self.comments[_parent].moderator,
-        moderated: False,
-        edited: False,
-        date_posted: block.timestamp
+        exclusive: self.comments[_parent].exclusive,
+        moderator: self.comments[_parent].moderator
     }
-    
-    self.comments[_parent].child = self.comment_count
 
     log.Comment(
         self.comment_count,
         msg.sender,
-        _parent
+        _parent,
+        _ipfs_hash
     )
 
     
 @public
 def moderateComment(_commentIndex: int128):
     assert msg.sender == self.comments[_commentIndex].moderator
-    self.comments[_commentIndex].moderated = True
-    self.comments[_commentIndex].author = 0
-    self.comments[_commentIndex].ipfsHash = 0
+
+    log.Moderate(
+        _commentIndex
+    )
 
 @public
 def editComment(_commentIndex: int128, _ipfs_hash: bytes32):
     assert msg.sender == self.comments[_commentIndex].author
-    self.comments[_commentIndex].edited = True
-    self.comments[_commentIndex].ipfs_hash = _ipfs_hash
+
+    log.Edit(
+        _commentIndex,
+        _ipfs_hash
+    )
 
 @public
 def registerName(_name: bytes32):
-    self.names[msg.sender] = _name
+    log.Name(
+        msg.sender,
+        _name
+    )

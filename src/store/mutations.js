@@ -1,6 +1,7 @@
 import Vue from 'vue'
 
-import STATUS from '../enum/commentStatus'
+import COMMENT_STATUS from '../enum/commentStatus'
+import TEXT_STATUS from '../enum/textStatus'
 
 function addChildParentRelationship (state, child, parent) {
   Vue.set(state.parents, child, parent)
@@ -30,30 +31,32 @@ export default {
     for (let id in state.comments) {
       const otherComment = state.comments[id]
 
-      // if the new comment is a sibling, then otherComment has the same parent
-      if (otherComment.sibling === comment.id) {
-        const child = comment.id
-        const parent = state.parents[otherComment.id]
-        if (child && parent) {
-          addChildParentRelationship(state, child, parent)
+      if (otherComment !== null) {
+        // if the new comment is a sibling, then otherComment has the same parent
+        if (otherComment.sibling === comment.id) {
+          const child = comment.id
+          const parent = state.parents[otherComment.id]
+          if (child && parent) {
+            addChildParentRelationship(state, child, parent)
+          }
+          break
         }
-        break
-      }
-      // if the new comment is the child, then otherComment is the parent
-      if (otherComment.child === comment.id) {
-        const child = comment.id
-        const parent = otherComment.id
-        if (child && parent) {
-          addChildParentRelationship(state, child, parent)
+        // if the new comment is the child, then otherComment is the parent
+        if (otherComment.child === comment.id) {
+          const child = comment.id
+          const parent = otherComment.id
+          if (child && parent) {
+            addChildParentRelationship(state, child, parent)
+          }
+          break
         }
-        break
       }
     }
   },
-  // SET_COMMENT_CHILD: (state, { id, child }) => {
-  //   // this mutation gets called when a new comment is added by the user.
-  //   state.comments[id].child = child
-  // },
+  SET_COMMENT_CHILD: (state, { id, child }) => {
+    // this mutation gets called when a new comment is added by the user.
+    state.comments[id].child = child
+  },
   SET_COMMENT_MODERATION: (state, { id, moderated }) => {
     Vue.set(state.comments[id], 'moderated', moderated)
   },
@@ -63,20 +66,30 @@ export default {
   SET_ETH_ADDRESS: (state, { ethAddress }) => {
     state.ethAddress = ethAddress
   },
+  SET_IPFS_STATUS: (state, { status }) => {
+    state.ipfsStatus = status
+  },
   SET_NAME: (state, { address, name }) => {
     Vue.set(state.names, address, name)
   },
   SET_PLACEHOLDER_COMMENT: (state, { parent, text, id }) => {
     const placeholderComment = {
       author: state.ethAddress,
-      status: STATUS.PENDING_IPFS,
+      status: COMMENT_STATUS.PENDING_IPFS,
       id: id
     }
 
     Vue.set(state.comments, id, placeholderComment)
-    Vue.set(state.texts, id, text)
+    Vue.set(state.texts, id, { value: text, status: TEXT_STATUS.SUCCESS })
 
     addChildParentRelationship(state, id, parent)
+  },
+  SET_TEXT_ERROR_MESSAGE: (state, { id, message }) => {
+    if (!state.texts[id]) {
+      // text object doesn't exist yet, go ahead and create it
+      Vue.set(state.texts, id, { errorMsg: message })
+    }
+    Vue.set(state.texts[id], 'errorMsg', message)
   },
   SET_TEXT_STATUS: (state, { id, status }) => {
     if (!state.texts[id]) {

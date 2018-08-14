@@ -1,15 +1,49 @@
 <template>
-  <div class="item-view" v-if="rootComment">
+  <div class="item-view">
     
     <about-pigeon-modal />
     <create-thread-modal />
     <register-name-modal />
+    <settings-modal :initialIpfsUrl="ipfsUrl"/>
 
+    <template v-if="ipfsStatus === IPFS_STATUS.WAITING">
+      WAITING
+    </template>
+    <template v-if="ipfsStatus === IPFS_STATUS.CHECKING">
+      CHECKING
+    </template>
+    <template v-else-if="ipfsStatus === IPFS_STATUS.ERROR">
+      <div>
+				<p>
+					Your IPFS API is located at <strong>{{ipfs.host}}</strong>.
+					<div>Change it in the options menu at top right.</div>
+				</p>
+				<p>
+					Have you configured CORS for IPFS?
+					<pre>
+						<code>
+							ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin {{corsOrigin}}
+							<br />
+							ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
+						</code>
+					</pre>
+				</p>
+				<p css="margin-top: 10px;">
+					<Button type="default" onClick={this.updateIpfsConnection}>
+						Retry
+					</Button>
+				</p>
+			</div>
+    </template>
+    <template v-else-if="ipfsStatus === IPFS_STATUS.SUCCESS">
+      SUCCESS
+    </template>
     <template v-if="rootComment">
       <div class="item-view-header">
         <identicon :address="rootComment.author" class="identicon"></identicon>
         
         <div class="title-block">
+          <!-- TODO, make text a component -->
           <div v-if="text && text.value">
             <vue-markdown v-once class="text">{{ text.value }}</vue-markdown>
           </div>
@@ -57,11 +91,15 @@
           </button>
           |
           <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-            add pigeon to your site
+            🌱 add pigeon to your site
           </button>
           |
           <button class="footer-btn" @click="$modal.show('register-name-modal')">
-            register your name
+            📇 register your name
+          </button>
+          |
+          <button class="footer-btn" @click="$modal.show('settings-modal')">
+            ⚙️ settings
           </button>
         </span>
         <div class="footer-right">
@@ -84,8 +122,10 @@ import CreateThreadModal from './components/modals/Create-Thread-Modal'
 import Editor from './components/Editor'
 import Identicon from './components/Identicon'
 import RegisterNameModal from './components/modals/Register-Name-Modal'
+import SettingsModal from './components/modals/Settings-Modal'
 import Spinner from './components/Spinner'
-import { FETCH_COMMENTS, FETCH_ETH_ADDRESS } from './store/types'
+import { FETCH_COMMENTS, FETCH_COMMENTS_BY_PERSON, FETCH_ETH_ADDRESS, UPDATE_IPFS_CONNECTION } from './store/types'
+import IPFS_STATUS from './enum/ipfsStatus'
 
 export default {
   name: 'app',
@@ -96,38 +136,57 @@ export default {
     Editor,
     Identicon,
     RegisterNameModal,
+    SettingsModal,
     Spinner,
     VueMarkdown
   },
   data: () => ({
+    IPFS_STATUS,
     loading: false,
-    showDetails: false
+    showDetails: false,
+    showSettings: false,
+    version: process.env.version
   }),
   computed: {
-    rootComment () {
-      return this.$store.state.comments[this.$store.state.rootCommentId]
-    },
     authorName () {
       return this.$store.state.names[this.rootComment.author]
-    },
-    moderatorName () {
-      return this.$store.state.names[this.rootComment.moderator]
     },
     children () {
       return this.$store.state.children[this.$store.state.rootCommentId] || []
     },
+    corsOrigin () {
+      return JSON.stringify(JSON.stringify([window.location.origin]))
+    },
+    ipfsStatus () {
+      return this.$store.state.ipfsStatus
+    },
+    ipfsUrl () {
+      return this.$store.state.ipfsUrl
+    },
+    moderatorName () {
+      return this.$store.state.names[this.rootComment.moderator]
+    },
+    rootComment () {
+      return this.$store.state.comments[this.$store.state.rootCommentId]
+    },
     text () {
       return this.$store.state.texts[this.$store.state.rootCommentId]
-    },
-    version () {
-      return process.env.version
     }
   },
   beforeMount () {
-    this.$store.dispatch(FETCH_ETH_ADDRESS)
-    this.fetchComments({
-      id: this.$store.state.rootCommentId,
-      numberToLoad: 5
+    this.$store.dispatch(FETCH_ETH_ADDRESS).then(() => {
+      const address = this.$store.state.ethAddress
+      this.$store.dispatch(FETCH_COMMENTS_BY_PERSON, { address })
+    })
+    this.updateIpfsConnection({
+      url: this.$store.state.ipfsUrl
+    }).then(() => {
+      if (this.ipfsStatus === IPFS_STATUS.SUCCESS) {
+        this.fetchComments({
+          id: this.$store.state.rootCommentId,
+          numberToLoad: 5
+        })
+      }
     })
   },
   methods: {
@@ -135,6 +194,7 @@ export default {
       this.$refs.replyEditor.submitReply()
     },
     ...mapActions({
+      'updateIpfsConnection': UPDATE_IPFS_CONNECTION,
       'fetchComments': FETCH_COMMENTS
     })
   }

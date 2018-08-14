@@ -3,10 +3,11 @@ import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
 import metamask from '../dweb/metamask'
 import COMMENT_STATUS from '../enum/commentStatus'
+import IPFS_STATUS from '../enum/ipfsStatus'
 import TEXT_STATUS from '../enum/textStatus'
 
 export default {
-  [types.EDIT_COMMENT]: ({ commit, state, dispatch }, { id, text }) => {
+  [types.EDIT_COMMENT]: ({ commit, dispatch, state }, { id, text }) => {
     const parent = state.parents[id]
     commit('UNSET_COMMENT', { id, parent })
     commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
@@ -80,6 +81,13 @@ export default {
     }
   },
 
+  [types.FETCH_COMMENTS_BY_PERSON]: ({ state }, { address }) => {
+    contract.getCommentsByPerson(address).then(result => {
+      console.log('here')
+      console.log(result)
+    }).catch(console.error)
+  },
+
   [types.FETCH_COMMENT_RESOURCES]: ({ state, dispatch }, { comment }) => {
     if (comment) {
       dispatch(types.FETCH_NAME, { address: comment.author })
@@ -113,11 +121,12 @@ export default {
     const ipfsHash = state.comments[id].ipfsHash
     commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.FETCHING })
     return ipfs.getText(ipfsHash).then(text => {
-      commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.SUCCESS })
       commit('SET_TEXT_VALUE', { id, value: text })
+      commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.SUCCESS })
     }).catch(err => {
       console.error(err)
       commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.ERROR })
+      commit('SET_TEXT_ERROR_MESSAGE', { id, message: err.message })
     })
   },
 
@@ -138,29 +147,41 @@ export default {
   },
 
   [types.PUBLISH_COMMENT]: ({ commit, state, dispatch }, { parent, text }) => {
-    const id = 1e6
+    // add a placeholder comment
+    // the placeholder Id needs to be bigger than all of the other ones
+    // because it's the "most recent" comment
+    const ids = Object.keys(state.comments).map(Number)
+    const maxId = Math.max(...ids)
+    const id = maxId + 1
     commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
 
+    // Upload the content to ipfs
     return ipfs.setText(text).then(ipfsHash => {
       commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_APPROVAL })
+      // now save the comment to the blockchain
       return contract.addComment(parent, ipfsHash, state.ethAddress)
         .on('transactionHash', () => {
+          // this gets called when user clicks "confirm" in MetaMask
           commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_TX })
         })
         .on('receipt', function (receipt) {
-          // load the new comment
+          // this gets called when the tx gets it's first confirmation
           const newCommentId = Number(receipt.events.Comment.returnValues[0])
-          // commit('SET_COMMENT_CHILD', { id: parent, child: newCommentId })
-          dispatch(types.FETCH_COMMENT, { id: newCommentId }).then(() => {
-            // remove the placeholder comment
-            commit('UNSET_COMMENT', { id, parent })
-          })
+          // parent.child must always point to the most recent child
+          commit('SET_COMMENT_CHILD', { id: parent, child: newCommentId })
+          // remove the placeholder comment
+          commit('UNSET_COMMENT', { id, parent })
+          // load the new comment
+          dispatch(types.FETCH_COMMENT, { id: newCommentId })
         })
         .on('error', err => {
+          // web3 error
           console.error(err)
           commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
         })
-    }).catch(() => {
+    }).catch(err => {
+      // IPFS error
+      console.error(err)
       commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
     })
   },
@@ -177,5 +198,17 @@ export default {
 
   [types.REMOVE_COMMENT]: ({ commit, state }, { id, parent }) => {
     commit('UNSET_COMMENT', { id, parent })
+  },
+
+  [types.UPDATE_IPFS_CONNECTION]: ({ commit, state }, { url }) => {
+    commit('SET_IPFS_STATUS', { status: IPFS_STATUS.CHECKING })
+    const { hostname, port, protocol } = new URL(url)
+    ipfs.updateConnection({ host: hostname, port, protocol: protocol.slice(0, -1) })
+    return ipfs.getVersion().then(response => {
+      commit('SET_IPFS_STATUS', { status: IPFS_STATUS.SUCCESS })
+    }).catch(err => {
+      console.error(err)
+      commit('SET_IPFS_STATUS', { status: IPFS_STATUS.ERROR })
+    })
   }
 }

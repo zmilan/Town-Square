@@ -66,8 +66,19 @@
 
       <div v-show="open">
 
-        <div v-if="text && text.value && !editing && !comment.moderated">
-          <vue-markdown class="text">{{ text.value }}</vue-markdown>
+        <div v-if="text && !editing && !comment.moderated">
+          <vue-markdown v-if="text.status === TEXT_STATUS.SUCCESS && text.value" class="text">{{text.value}}</vue-markdown>
+          
+          <div v-else-if="text.status === TEXT_STATUS.FETCHING" class="status text-status">
+            <spinner show="true" style="spinner"></spinner>
+            retrieving content from IPFS
+          </div>
+          <div v-else-if="text.status === TEXT_STATUS.ERROR" class="text-status">
+            couldn't retrieve content from IPFS: {{text.errorMsg}}
+            <button class="action-btn" @click="fetchText({ id })">
+              [retry]
+            </button>
+          </div>
         </div>
 
         <div v-if="comment.status === COMMENT_STATUS.SAVED">
@@ -148,8 +159,10 @@ import VueMarkdown from 'vue-markdown'
 
 import Editor from './Editor'
 import Identicon from './Identicon'
-import { FETCH_COMMENTS, MODERATE_COMMENT, EDIT_COMMENT, REMOVE_COMMENT, FETCH_COMMENT } from '../store/types'
+import Spinner from './Spinner'
+import { FETCH_COMMENTS, MODERATE_COMMENT, EDIT_COMMENT, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT } from '../store/types'
 import COMMENT_STATUS from '../enum/commentStatus'
+import TEXT_STATUS from '../enum/textStatus'
 
 export default {
   name: 'comment',
@@ -157,6 +170,7 @@ export default {
   components: {
     Editor,
     Identicon,
+    Spinner,
     VueMarkdown
   },
   data () {
@@ -166,7 +180,7 @@ export default {
       replying: false,
       showDetails: false,
       COMMENT_STATUS,
-      overrideModeration: false
+      TEXT_STATUS
     }
   },
   mounted () {
@@ -221,7 +235,8 @@ export default {
       'removeComment': REMOVE_COMMENT,
       'fetchComment': FETCH_COMMENT,
       'fetchComments': FETCH_COMMENTS,
-      'moderate': MODERATE_COMMENT
+      'moderate': MODERATE_COMMENT,
+      'fetchText': FETCH_TEXT
     })
   }
 }
@@ -259,6 +274,17 @@ fontSize = 1em
     .replying-as
       width 100%
       text-align right
+    .status
+      color black
+      font-weight bold
+    .status:after
+      overflow hidden
+      display inline-block
+      vertical-align bottom
+      -webkit-animation ellipsis steps(4,end) 900ms infinite 
+      animation ellipsis steps(4,end) 900ms infinite
+      content "\2026" /* ascii code for the ellipsis character */
+      width 0px
     .byline
       .identicon, .by, .toggle, .edited
         display inline-block
@@ -283,17 +309,6 @@ fontSize = 1em
             color black
             text-decoration underline
             cursor pointer
-        .status
-          color black !important
-          font-weight bold
-        .status:after
-          overflow hidden
-          display inline-block
-          vertical-align bottom
-          -webkit-animation ellipsis steps(4,end) 900ms infinite 
-          animation ellipsis steps(4,end) 900ms infinite
-          content "\2026" /* ascii code for the ellipsis character */
-          width 0px
         @keyframes ellipsis
           to
             width 1.25em
@@ -316,6 +331,15 @@ fontSize = 1em
       font-size fontSize
       a:hover
         color #ff6600
+    .text-status
+      color #828282
+      font-style italic
+      font-size (0.8 * fontSize)
+      margin-left 1em
+    .spinner
+      width 1.3em
+      height 1.3em
+      margin-left 2em
     .moderated
       color #828282
       font-style italic
@@ -332,16 +356,15 @@ fontSize = 1em
       .reply, .update
         color black
         text-decoration underline
-    .action-btns
-      .action-btn
-        background none
-        border none
-        color #828282
-        font-size (0.8 * fontSize)
-        &:hover
-          color black
-          text-decoration underline
-          cursor pointer
+    .action-btn
+      background none
+      border none
+      color #828282
+      font-size (0.8 * fontSize)
+      &:hover
+        color black
+        text-decoration underline
+        cursor pointer
 </style>
 
 <style lang="stylus">

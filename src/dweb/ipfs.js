@@ -1,16 +1,9 @@
-const bs58 = require('bs58')
-// const IPFS = require('ipfs-api')
-console.log(process.env)
+import bs58 from 'bs58'
+const IPFS = require('ipfs-api')
 
-// const ipfs = new IPFS(process.env.ipfs)
-const ipfs = window.ipfs
+let ipfs
 
 export default {
-  setText: text => {
-    return ipfs.add(new Buffer(text)).then(results => {
-      return results[0].hash
-    })
-  },
   getText: hash => {
     const hashHex = '1220' + hash.slice(2)
     const hashBytes = Buffer.from(hashHex, 'hex')
@@ -23,14 +16,16 @@ export default {
         return text
       })
     }
+  },
+  getVersion: () => {
+    return ipfs.version()
+  },
+  setText: text => {
+    return ipfs.add(new Buffer(text)).then(results => {
+      return results[0].hash
+    })
+  },
+  updateConnection: ({ host, port, protocol }) => {
+    ipfs = new IPFS({ host, port, protocol })
   }
-  // ,
-  // getVersion: host => {
-  //   return axios({
-  //     method: 'GET',
-  //     url: '/api/v0/version',
-  //     baseURL: host,
-  //     params: { number: true },
-  //   })
-  // }
 }
