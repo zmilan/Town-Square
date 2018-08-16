@@ -84,7 +84,7 @@
         <div v-if="comment.status === COMMENT_STATUS.SAVED">
           <transition name="slide-fade">
             <div v-if="editing">
-              <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text.value"></editor>
+              <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text.value" :placeholder="editorPlaceholderReply"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="editing = false">Cancel</button>
                 <button class="md-btn update" @click="update">Update</button>
@@ -93,22 +93,33 @@
           </transition>
 
           <div class="action-btns" v-if="!replying && !editing">
-            <button class="action-btn" 
-              @click="replying = true">
-              reply
-            </button>
-            <button class="action-btn" v-if="ethAddress == comment.author && !comment.moderated" 
-              @click="editing = true">
-              edit
-            </button>
-            <button class="action-btn" v-if="ethAddress == comment.moderator && !comment.moderated" 
-              @click="moderate({ id })">
-              moderate
-              </button>
-            <!-- <button class="action-btn" v-if="account == comment.moderator && comment.moderated" 
-              @click="moderate({ id, moderated: false })">
-              unmoderate
-            </button> -->
+            <div v-if="depth < depthLimit - 1">
+              <div v-if="ethAddress">
+                <button class="action-btn" 
+                  @click="replying = true">
+                  reply
+                </button>
+                <button class="action-btn" v-if="ethAddress == comment.author && !comment.moderated" 
+                  @click="editing = true">
+                  edit
+                </button>
+                <button class="action-btn" v-if="ethAddress == comment.moderator && !comment.moderated" 
+                  @click="moderate({ id })">
+                  moderate
+                </button>
+              </div>
+              <div v-else>
+                <button class="action-btn" @click="$modal.show('about-pigeon-modal')">
+                  reply
+                </button>
+              </div>
+            </div>
+            <div v-else>
+              <a class="action-btn" 
+                :href="viewCommentsUrl">
+                view comments
+              </a>
+            </div>
           </div>
 
           <transition name="slide-fade">
@@ -116,11 +127,11 @@
               <div class="byline replying-as">
                 
                 <a class="by">replying as:</a>
-                <identicon class="identicon" :address="comment.author"></identicon>
-          
+                <identicon class="identicon" :address="ethAddress"></identicon>
+
                 <a class="by">
-                  <a v-if="authorName">{{ authorName }}</a>
-                  <a v-else>{{ comment.author | truncate }}</a>
+                  <a v-if="username">{{ username }}</a>
+                  <a v-else>{{ ethAddress | truncate }}</a>
                 </a>
 
                 <button class="md-btn" v-if="!authorName" @click="$modal.show('register-name-modal')">
@@ -128,7 +139,7 @@
                 </button>
               </div>
 
-              <editor ref="replyEditor" :id="id" :autosave="false"></editor>
+              <editor ref="replyEditor" :id="id" :autosave="false" :placeholder="editorPlaceholderReply"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="replying = false">Cancel</button>
                 <button class="md-btn reply" @click="reply">Reply</button>
@@ -136,14 +147,14 @@
             </div>
           </transition>
 
-          <ul class="comment-children">
-            <comment v-for="id in children" :key="id" :id="id"></comment>
+          <ul class="comment-children" v-if="depth < depthLimit">
+            <comment v-for="id in children" :key="id" :id="id" :depth="depth + 1"></comment>
           </ul>
 
-          <button v-if="canLoadSibling" class="md-btn" @click="fetchComments({id: comment.sibling, numberToLoad: 2})">
+          <button v-if="canLoadSibling" class="md-btn" @click="fetchComments({id: comment.sibling, numberToLoad: 15, depth: 3})">
             load more <a class="arrow">⬇</a>
           </button>
-          <button v-if="canLoadChild" class="md-btn" @click="fetchComments({id: comment.child, numberToLoad: 2})">
+          <button v-if="canLoadChild" class="md-btn" @click="fetchComments({id: comment.child, numberToLoad: 15, depth: 3})">
             load more <a class="arrow">⬊</a>
           </button>
         </div>
@@ -157,16 +168,17 @@
 import { mapActions } from 'vuex'
 import VueMarkdown from 'vue-markdown'
 
+import COMMENT_STATUS from '../enum/commentStatus'
 import Editor from './Editor'
 import Identicon from './Identicon'
 import Spinner from './Spinner'
 import { FETCH_COMMENTS, MODERATE_COMMENT, EDIT_COMMENT, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT } from '../store/types'
-import COMMENT_STATUS from '../enum/commentStatus'
+import { makeParamtersRoute } from '../util/routeParameters'
 import TEXT_STATUS from '../enum/textStatus'
 
 export default {
   name: 'comment',
-  props: ['id'],
+  props: ['id', 'depth'],
   components: {
     Editor,
     Identicon,
@@ -176,6 +188,8 @@ export default {
   data () {
     return {
       open: true,
+      depthLimit: window.config.depthLimit,
+      editorPlaceholderReply: window.config.editorPlaceholderReply,
       editing: false,
       replying: false,
       showDetails: false,
@@ -199,6 +213,16 @@ export default {
     ethAddress () {
       return this.$store.state.ethAddress
     },
+    username () {
+      if (this.ethAddress) {
+        return this.$store.state.names[this.ethAddress] || ''
+      } else {
+        return ''
+      }
+    },
+    viewCommentsUrl () {
+      return makeParamtersRoute(this.id, window.config.clickThroughConfig)
+    },
     children () {
       return this.$store.state.children[this.id] || []
     },
@@ -206,7 +230,7 @@ export default {
       return this.$store.state.texts[this.id]
     },
     canLoadChild () {
-      return this.comment.child && !this.$store.state.comments[this.comment.child]
+      return this.comment.child && !this.$store.state.comments[this.comment.child] && this.depth < this.depthLimit
     },
     canLoadSibling () {
       return this.comment.sibling && !this.$store.state.comments[this.comment.sibling]

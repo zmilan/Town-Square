@@ -1,11 +1,16 @@
 <template>
   <div class="item-view">
     
+    
+    <!-- <notifications group="pigeon" /> -->
     <about-pigeon-modal />
     <create-thread-modal />
     <register-name-modal />
-    <settings-modal :initialIpfsUrl="ipfsUrl"/>
-
+    <settings-modal />
+    <notification group="ipfs-notification"/>
+    <notification group="ethereum-notification"/>
+    <!-- <notifications group="ethereum-notification" /> -->
+<!-- 
     <template v-if="ipfsStatus === IPFS_STATUS.WAITING">
       WAITING
     </template>
@@ -37,11 +42,9 @@
     </template>
     <template v-else-if="ipfsStatus === IPFS_STATUS.SUCCESS">
       SUCCESS
-    </template>
+    </template> -->
     <template v-if="rootComment">
       <div class="item-view-header">
-        <identicon :address="rootComment.author" class="identicon"></identicon>
-        
         <div class="title-block">
           <!-- TODO, make text a component -->
           <div v-if="text && text.value">
@@ -49,33 +52,40 @@
           </div>
 
           <div class="byline">
-            <a class="byline-el" @mouseover="showDetails = true" @mouseout="showDetails = false">
+
+            <identicon class="identicon" :address="rootComment.author"></identicon>
+
+            <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
               <a>{{ authorName || rootComment.author }}</a>    
               •
             </a>
-            <a class="byline-el">
+            <a class="by">
               <a>{{ rootComment.datePosted | timeAgo }}</a>
               •
             </a>
-            <a class="byline-el">
-              <a>mod: {{ moderatorName || rootComment.moderator }}</a>
+            
+            <a class="by">
+              <a>moderator: </a>
+            </a>
+            <identicon class="identicon" :address="rootComment.moderator"></identicon>
+            <a class="by">
+              <a>{{ moderatorName || rootComment.moderator }}</a>
             </a>
           </div>        
         </div>
       </div>
 
-      <editor :id="rootComment.id" ref="replyEditor" :autosave="false"></editor>
+      <editor :id="rootComment.id" ref="replyEditor" :autosave="false" :placeholder="editorPlaceholderTop"></editor>
       <button class="add-comment-btn" @click="addComment">add comment</button>
 
       <hr class="divider">
 
       <div class="item-view-comments">
         <p class="item-view-comments-header">
-          {{ children.length ? '' : 'No comments yet.' }}
           <spinner :show="loading"></spinner>
         </p>
         <ul v-if="!loading && rootComment.child" class="comment-children">
-          <comment v-for="id in children" :key="id" :id="id"></comment>
+          <comment v-for="id in children" :key="id" :id="id" :depth="1"></comment>
         </ul>
         <div v-if="!loading && !rootComment.child" class="no-comments-container">
           <div class="no-comments-msg">Be the first to comment 🕊️</div>
@@ -87,11 +97,11 @@
       <div>
         <span>
           <button class="logo footer-btn" @click="$modal.show('about-pigeon-modal')">
-            🕊️pigeon
+            🕊️ pigeon
           </button>
           |
           <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-            🌱 add pigeon to your site
+            🌳 add pigeon to your site
           </button>
           |
           <button class="footer-btn" @click="$modal.show('register-name-modal')">
@@ -113,6 +123,8 @@
 </template>
 
 <script>
+import debounce from 'lodash.debounce'
+import throttle from 'lodash.throttle'
 import { mapActions } from 'vuex'
 import VueMarkdown from 'vue-markdown'
 
@@ -120,11 +132,14 @@ import AboutPigeonModal from './components/modals/About-Pigeon-Modal'
 import Comment from './components/Comment'
 import CreateThreadModal from './components/modals/Create-Thread-Modal'
 import Editor from './components/Editor'
+import Emitter from './util/emitter'
 import Identicon from './components/Identicon'
+import Notification from './components/Notification'
 import RegisterNameModal from './components/modals/Register-Name-Modal'
 import SettingsModal from './components/modals/Settings-Modal'
 import Spinner from './components/Spinner'
-import { FETCH_COMMENTS, FETCH_COMMENTS_BY_PERSON, FETCH_ETH_ADDRESS, UPDATE_IPFS_CONNECTION } from './store/types'
+import { FETCH_COMMENT, FETCH_COMMENTS, UPDATE_ETH_ADDRESS, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
+import ETHEREUM_STATUS from './enum/ethereumStatus'
 import IPFS_STATUS from './enum/ipfsStatus'
 
 export default {
@@ -135,6 +150,7 @@ export default {
     CreateThreadModal,
     Editor,
     Identicon,
+    Notification,
     RegisterNameModal,
     SettingsModal,
     Spinner,
@@ -142,7 +158,9 @@ export default {
   },
   data: () => ({
     IPFS_STATUS,
+    editorPlaceholderTop: window.config.editorPlaceholderTop,
     loading: false,
+    rootCommentId: window.config.rootCommentId,
     showDetails: false,
     showSettings: false,
     version: process.env.version
@@ -152,10 +170,13 @@ export default {
       return this.$store.state.names[this.rootComment.author]
     },
     children () {
-      return this.$store.state.children[this.$store.state.rootCommentId] || []
+      return this.$store.state.children[this.rootCommentId] || []
     },
     corsOrigin () {
       return JSON.stringify(JSON.stringify([window.location.origin]))
+    },
+    ethereumStatus () {
+      return this.$store.state.ethereumStatus
     },
     ipfsStatus () {
       return this.$store.state.ipfsStatus
@@ -167,35 +188,101 @@ export default {
       return this.$store.state.names[this.rootComment.moderator]
     },
     rootComment () {
-      return this.$store.state.comments[this.$store.state.rootCommentId]
+      return this.$store.state.comments[this.rootCommentId]
     },
     text () {
-      return this.$store.state.texts[this.$store.state.rootCommentId]
+      return this.$store.state.texts[this.rootCommentId]
     }
   },
   beforeMount () {
-    this.$store.dispatch(FETCH_ETH_ADDRESS).then(() => {
-      const address = this.$store.state.ethAddress
-      this.$store.dispatch(FETCH_COMMENTS_BY_PERSON, { address })
-    })
-    this.updateIpfsConnection({
-      url: this.$store.state.ipfsUrl
+    this.updateEthereumConnection({url: window.config.ethereumUrl}).then(() => {
+      return this.updateIpfsConnection({url: window.config.ipfsUrl})
     }).then(() => {
-      if (this.ipfsStatus === IPFS_STATUS.SUCCESS) {
-        this.fetchComments({
-          id: this.$store.state.rootCommentId,
-          numberToLoad: 5
+      // Load the root comment first
+      this.fetchComment({id: this.rootCommentId}).then(() => {
+        if (this.rootComment && this.rootComment.child) {
+          // Now start load the other comments
+          this.fetchComments({
+            id: this.rootComment.child,
+            numberToLoad: 15,
+            depth: Math.min(window.config.depthLimit - 1, 3)
+          })
+        }
+      })
+    })
+  },
+  created () {
+    // register metamask event listeners
+    Emitter.on('Metamask-Update', debounce(function (details) {
+      try {
+        this.updateEthAddress({ address: details.selectedAddress })
+      } catch (err) {
+        console.error(err)
+      }
+    }.bind(this)), 1000)
+
+    require('./dweb/metamask')
+  },
+  watch: {
+    ipfsStatus: throttle(function (status) {
+      this.$notify({
+        group: 'ipfs-notification',
+        clean: true
+      })
+      if (status === IPFS_STATUS.ERROR) {
+        this.$notify({
+          group: 'ipfs-notification',
+          title: '😿 can\'t connect to IPFS',
+          text: 'gateway: ' + this.ipfsUrl,
+          type: 'error',
+          duration: -1
+        })
+      } else if (status === IPFS_STATUS.STILL_CHECKING) {
+        this.$notify({
+          group: 'ipfs-notification',
+          title: 'It\'s taking longer than normal to connect to IPFS...',
+          type: 'warn',
+          duration: -1
         })
       }
-    })
+    }, 1000),
+    ethereumStatus: throttle(function (status) {
+      this.$notify({
+        group: 'ethereum-notification',
+        clean: true
+      })
+      if (status === ETHEREUM_STATUS.ERROR) {
+        let msg = ''
+        if (typeof window.web3 === 'undefined') {
+          msg += ' trying to connect to node: ' + this.ethereumUrl
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          msg += ' make sure you are connected to the Rinkeby network (development)'
+        } else {
+          msg += ' make sure you are connected to the mainnet'
+        }
+
+        this.$notify({
+          group: 'ethereum-notification',
+          title: '😿 can\'t connect to Ethereum network',
+          text: msg,
+          type: 'error',
+          duration: -1
+        })
+      }
+    }, 1000)
   },
   methods: {
     addComment () {
       this.$refs.replyEditor.submitReply()
     },
     ...mapActions({
-      'updateIpfsConnection': UPDATE_IPFS_CONNECTION,
-      'fetchComments': FETCH_COMMENTS
+      'fetchComment': FETCH_COMMENT,
+      'fetchComments': FETCH_COMMENTS,
+      'updateEthAddress': UPDATE_ETH_ADDRESS,
+      'updateEthereumConnection': UPDATE_ETHEREUM_CONNECTION,
+      'updateIpfsConnection': UPDATE_IPFS_CONNECTION
     })
   }
 }
@@ -207,13 +294,7 @@ export default {
   background-color #fff
   display flex
   flex-direction row
-  .identicon
-    flex: 0 0 2em
-    height 2em
-    vertical-align top
-    float left
   .title-block
-    flex 1
     margin: 0 0 0.5em 0.5em
     .text
       font-size 1.1em
@@ -221,6 +302,11 @@ export default {
     .byline
       font-size 0.8em
       color #828282
+      .identicon
+        width: 2em
+      .identicon, .by
+        display inline-block
+        vertical-align middle
 .add-comment-btn
   background none
   border 2px solid

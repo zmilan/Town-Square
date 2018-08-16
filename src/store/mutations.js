@@ -63,11 +63,20 @@ export default {
   SET_COMMENT_STATUS: (state, {id, status}) => {
     Vue.set(state.comments[id], 'status', status)
   },
-  SET_ETH_ADDRESS: (state, { ethAddress }) => {
-    state.ethAddress = ethAddress
+  SET_ETH_ADDRESS: (state, { address }) => {
+    state.ethAddress = address
+  },
+  SET_ETHEREUM_STATUS: (state, { status }) => {
+    state.ethereumStatus = status
+  },
+  SET_ETHEREUM_URL: (state, { url }) => {
+    state.ethereumUrl = url
   },
   SET_IPFS_STATUS: (state, { status }) => {
     state.ipfsStatus = status
+  },
+  SET_IPFS_URL: (state, { url }) => {
+    state.ipfsUrl = url
   },
   SET_NAME: (state, { address, name }) => {
     Vue.set(state.names, address, name)
