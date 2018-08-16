@@ -1,3 +1,5 @@
+import sanitize from 'sanitize-html'
+
 import * as types from './types'
 import contract from '../dweb/contract'
 import ipfs from '../dweb/ipfs'
@@ -145,6 +147,7 @@ export default {
     const ids = Object.keys(state.comments).map(Number)
     const maxId = Math.max(...ids)
     const id = maxId + 1
+    text = sanitize(text)
     commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
 
     // Upload the content to ipfs

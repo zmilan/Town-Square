@@ -1,4 +1,5 @@
 import bs58 from 'bs58'
+import sanitize from 'sanitize-html'
 import Web3 from 'web3'
 import COMMENT_STATUS from '../enum/commentStatus'
 import Emitter from '../util/emitter'
@@ -95,7 +96,7 @@ export default {
     } else {
       return contract.methods.names(address).call().then(nameBytes32 => {
         const ascii = web3.utils.toAscii(nameBytes32)
-        return ascii.replace(/\0/g, '') // strip out null characters /u0000
+        return sanitize(ascii.replace(/\0/g, '')) // strip out null characters /u0000
       })
     }
   },

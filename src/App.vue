@@ -1,48 +1,13 @@
 <template>
   <div class="item-view">
     
-    
-    <!-- <notifications group="pigeon" /> -->
     <about-pigeon-modal />
     <create-thread-modal />
     <register-name-modal />
     <settings-modal />
     <notification group="ipfs-notification"/>
     <notification group="ethereum-notification"/>
-    <!-- <notifications group="ethereum-notification" /> -->
-<!-- 
-    <template v-if="ipfsStatus === IPFS_STATUS.WAITING">
-      WAITING
-    </template>
-    <template v-if="ipfsStatus === IPFS_STATUS.CHECKING">
-      CHECKING
-    </template>
-    <template v-else-if="ipfsStatus === IPFS_STATUS.ERROR">
-      <div>
-				<p>
-					Your IPFS API is located at <strong>{{ipfs.host}}</strong>.
-					<div>Change it in the options menu at top right.</div>
-				</p>
-				<p>
-					Have you configured CORS for IPFS?
-					<pre>
-						<code>
-							ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin {{corsOrigin}}
-							<br />
-							ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
-						</code>
-					</pre>
-				</p>
-				<p css="margin-top: 10px;">
-					<Button type="default" onClick={this.updateIpfsConnection}>
-						Retry
-					</Button>
-				</p>
-			</div>
-    </template>
-    <template v-else-if="ipfsStatus === IPFS_STATUS.SUCCESS">
-      SUCCESS
-    </template> -->
+
     <template v-if="rootComment">
       <div class="item-view-header">
         <div class="title-block">
@@ -75,14 +40,15 @@
         </div>
       </div>
 
-      <editor :id="rootComment.id" ref="replyEditor" :autosave="false" :placeholder="editorPlaceholderTop"></editor>
-      <button class="add-comment-btn" @click="addComment">add comment</button>
-
+      <div v-if="ethAddress">
+        <editor :id="rootComment.id" ref="replyEditor" :autosave="false" :placeholder="editorPlaceholderTop"></editor>
+        <button class="add-comment-btn" @click="addComment">add comment</button>
+      </div>
       <hr class="divider">
 
       <div class="item-view-comments">
         <p class="item-view-comments-header">
-          <spinner :show="loading"></spinner>
+          <spinner :show="loading" class="spinner"></spinner>
         </p>
         <ul v-if="!loading && rootComment.child" class="comment-children">
           <comment v-for="id in children" :key="id" :id="id" :depth="1"></comment>
@@ -159,10 +125,9 @@ export default {
   data: () => ({
     IPFS_STATUS,
     editorPlaceholderTop: window.config.editorPlaceholderTop,
-    loading: false,
+    loading: true,
     rootCommentId: window.config.rootCommentId,
-    showDetails: false,
-    showSettings: false,
+    showDetails: false, // TODO, make this a popover
     version: process.env.version
   }),
   computed: {
@@ -174,6 +139,9 @@ export default {
     },
     corsOrigin () {
       return JSON.stringify(JSON.stringify([window.location.origin]))
+    },
+    ethAddress () {
+      return this.$store.state.ethAddress
     },
     ethereumStatus () {
       return this.$store.state.ethereumStatus
@@ -220,8 +188,6 @@ export default {
         console.error(err)
       }
     }.bind(this)), 1000)
-
-    require('./dweb/metamask')
   },
   watch: {
     ipfsStatus: throttle(function (status) {
@@ -254,7 +220,7 @@ export default {
       if (status === ETHEREUM_STATUS.ERROR) {
         let msg = ''
         if (typeof window.web3 === 'undefined') {
-          msg += ' trying to connect to node: ' + this.ethereumUrl
+          msg += ' trying to connect to node: ' + this.$store.state.ethereumUrl
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -335,6 +301,7 @@ export default {
   .spinner
     display inline-block
     margin -15px 0
+    width 100%
 .divider
   border 0
   height 1px
@@ -354,7 +321,7 @@ export default {
   float right
 .footer-btn-right
   color #ddd
-@media (max-width 600px)
+@media (max-width 700px)
   .item-view-header
     h1
       font-size 1.25em

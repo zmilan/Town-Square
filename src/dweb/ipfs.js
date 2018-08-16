@@ -1,4 +1,5 @@
 import bs58 from 'bs58'
+import sanitize from 'sanitize-html'
 const IPFS = require('ipfs-api')
 
 let ipfs
@@ -13,7 +14,7 @@ export default {
     } else {
       return ipfs.get(hashStr).then(data => {
         const text = new TextDecoder('utf-8').decode(data[0].content)
-        return text
+        return sanitize(text)
       })
     }
   },
