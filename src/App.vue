@@ -125,7 +125,7 @@ export default {
   data: () => ({
     IPFS_STATUS,
     editorPlaceholderTop: window.config.editorPlaceholderTop,
-    loading: true,
+    loading: false, // TODO, start with loading = true
     rootCommentId: window.config.rootCommentId,
     showDetails: false, // TODO, make this a popover
     version: process.env.version

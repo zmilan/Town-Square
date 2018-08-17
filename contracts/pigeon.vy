@@ -9,7 +9,8 @@ comments: public({
     moderated: bool,
     edited: bool,
     exclusive: bool,
-    date_posted: timestamp
+    date_posted: timestamp,
+    is_root: bool
 }[int128])
 
 names: public(bytes32[address])
@@ -32,7 +33,8 @@ def startThread(_moderator: address, _exclusive: bool, _ipfs_hash: bytes32):
         moderated: False,
         exclusive: _exclusive,
         edited: False,
-        date_posted: block.timestamp
+        date_posted: block.timestamp,
+        is_root: True
     }
     
     log.Comment(
@@ -40,8 +42,6 @@ def startThread(_moderator: address, _exclusive: bool, _ipfs_hash: bytes32):
         msg.sender,
         0
     )
-
-    return 
 
 @public
 def addComment(_parent: int128, _ipfs_hash: bytes32):
@@ -58,8 +58,9 @@ def addComment(_parent: int128, _ipfs_hash: bytes32):
         moderator: self.comments[_parent].moderator,
         moderated: False,
         edited: False,
-        exclusive: self.comments[_parent].exclusive,
-        date_posted: block.timestamp
+        exclusive: self.comments[_parent].exclusive and self.comments[_parent].isRoot,
+        date_posted: block.timestamp,
+        is_root: False
     }
     
     self.comments[_parent].child = self.comment_count
