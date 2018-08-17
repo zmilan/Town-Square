@@ -3,7 +3,6 @@
     
     <about-pigeon-modal />
     <create-thread-modal />
-    <register-name-modal />
     <settings-modal />
     <notification group="ipfs-notification"/>
     <notification group="ethereum-notification"/>
@@ -21,27 +20,18 @@
             <identicon class="identicon" :address="rootComment.author"></identicon>
 
             <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-              <a>{{ authorName || rootComment.author }}</a>    
+              <a>{{ rootComment.author | truncate }}</a>    
               •
             </a>
             <a class="by">
               <a>{{ rootComment.datePosted | timeAgo }}</a>
-              •
             </a>
-            
-            <a class="by">
-              <a>moderator: </a>
-            </a>
-            <identicon class="identicon" :address="rootComment.moderator"></identicon>
-            <a class="by">
-              <a>{{ moderatorName || rootComment.moderator }}</a>
-            </a>
-          </div>        
+          </div>
         </div>
       </div>
 
       <div v-if="ethAddress">
-        <editor :id="rootComment.id" ref="replyEditor" :autosave="false" :placeholder="editorPlaceholderTop"></editor>
+        <editor :id="rootComment.id" ref="editor" :autosave="false" :placeholder="$config.editorPlaceholderTop"></editor>
         <button class="add-comment-btn" @click="addComment">add comment</button>
       </div>
       <hr class="divider">
@@ -63,15 +53,11 @@
       <div>
         <span>
           <button class="logo footer-btn" @click="$modal.show('about-pigeon-modal')">
-            🕊️ pigeon
+            ⛲ How does this work?
           </button>
           |
           <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-            🌳 add pigeon to your site
-          </button>
-          |
-          <button class="footer-btn" @click="$modal.show('register-name-modal')">
-            📇 register your name
+            🌳 add Town Square to your site
           </button>
           |
           <button class="footer-btn" @click="$modal.show('settings-modal')">
@@ -101,7 +87,6 @@ import Editor from './components/Editor'
 import Emitter from './util/emitter'
 import Identicon from './components/Identicon'
 import Notification from './components/Notification'
-import RegisterNameModal from './components/modals/Register-Name-Modal'
 import SettingsModal from './components/modals/Settings-Modal'
 import Spinner from './components/Spinner'
 import { FETCH_COMMENT, FETCH_COMMENTS, UPDATE_ETH_ADDRESS, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
@@ -109,7 +94,7 @@ import ETHEREUM_STATUS from './enum/ethereumStatus'
 import IPFS_STATUS from './enum/ipfsStatus'
 
 export default {
-  name: 'app',
+  name: 'town-square',
   components: {
     AboutPigeonModal,
     Comment,
@@ -117,63 +102,42 @@ export default {
     Editor,
     Identicon,
     Notification,
-    RegisterNameModal,
     SettingsModal,
     Spinner,
     VueMarkdown
   },
   data: () => ({
     IPFS_STATUS,
-    editorPlaceholderTop: window.config.editorPlaceholderTop,
     loading: false, // TODO, start with loading = true
-    rootCommentId: window.config.rootCommentId,
     showDetails: false, // TODO, make this a popover
     version: process.env.version
   }),
   computed: {
-    authorName () {
-      return this.$store.state.names[this.rootComment.author]
-    },
     children () {
-      return this.$store.state.children[this.rootCommentId] || []
-    },
-    corsOrigin () {
-      return JSON.stringify(JSON.stringify([window.location.origin]))
+      return this.$store.state.children[this.$config.rootCommentId] || []
     },
     ethAddress () {
       return this.$store.state.ethAddress
     },
-    ethereumStatus () {
-      return this.$store.state.ethereumStatus
-    },
-    ipfsStatus () {
-      return this.$store.state.ipfsStatus
-    },
-    ipfsUrl () {
-      return this.$store.state.ipfsUrl
-    },
-    moderatorName () {
-      return this.$store.state.names[this.rootComment.moderator]
-    },
     rootComment () {
-      return this.$store.state.comments[this.rootCommentId]
+      return this.$store.state.comments[this.$config.rootCommentId]
     },
     text () {
-      return this.$store.state.texts[this.rootCommentId]
+      return this.$store.state.texts[this.$config.rootCommentId]
     }
   },
   beforeMount () {
-    this.updateEthereumConnection({url: window.config.ethereumUrl}).then(() => {
-      return this.updateIpfsConnection({url: window.config.ipfsUrl})
+    this.updateEthereumConnection({url: this.$config.ethereumUrl}).then(() => {
+      return this.updateIpfsConnection({url: this.$config.ipfsUrl})
     }).then(() => {
       // Load the root comment first
-      this.fetchComment({id: this.rootCommentId}).then(() => {
+      this.fetchComment({id: this.$config.rootCommentId}).then(() => {
         if (this.rootComment && this.rootComment.child) {
           // Now start load the other comments
           this.fetchComments({
             id: this.rootComment.child,
             numberToLoad: 15,
-            depth: Math.min(window.config.depthLimit - 1, 3)
+            depth: Math.min(this.$config.depthLimit - 1, 3)
           })
         }
       })
@@ -199,7 +163,7 @@ export default {
         this.$notify({
           group: 'ipfs-notification',
           title: '😿 can\'t connect to IPFS',
-          text: 'gateway: ' + this.ipfsUrl,
+          text: 'gateway: ' + this.$store.state.ipfsUrl,
           type: 'error',
           duration: -1
         })
@@ -241,7 +205,7 @@ export default {
   },
   methods: {
     addComment () {
-      this.$refs.replyEditor.submitReply()
+      this.$refs.editor.submitReply()
     },
     ...mapActions({
       'fetchComment': FETCH_COMMENT,

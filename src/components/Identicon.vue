@@ -16,7 +16,6 @@ export default {
         format: 'svg'
       }
 
-      // const options = {}
       const data = new Identicon(hash, options).toString()
       return 'data:image/svg+xml;base64,' + data
     }

@@ -3,7 +3,7 @@
 import Vue from 'vue'
 
 // load config
-import './config'
+import config from './config'
 
 // import plugins
 import './plugins/simpleMDE'
@@ -17,15 +17,16 @@ Object.keys(filters).forEach(key => {
   Vue.filter(key, filters[key])
 })
 
+// setup config
+Vue.config.producsectionTip = false
+Vue.prototype.$config = config
+
 import App from './App'
 import store from './store'
 
-// setup config
-Vue.config.producsectionTip = false
-
 /* eslint-disable no-new */
 new Vue({
-  el: '#app',
+  el: '#' + config.containerId,
   store,
   template: '<App/>',
   components: { App }

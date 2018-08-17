@@ -57,9 +57,6 @@ export default {
     // this mutation gets called when a new comment is added by the user.
     state.comments[id].child = child
   },
-  SET_COMMENT_MODERATION: (state, { id, moderated }) => {
-    Vue.set(state.comments[id], 'moderated', moderated)
-  },
   SET_COMMENT_STATUS: (state, {id, status}) => {
     Vue.set(state.comments[id], 'status', status)
   },
@@ -77,9 +74,6 @@ export default {
   },
   SET_IPFS_URL: (state, { url }) => {
     state.ipfsUrl = url
-  },
-  SET_NAME: (state, { address, name }) => {
-    Vue.set(state.names, address, name)
   },
   SET_PLACEHOLDER_COMMENT: (state, { parent, text, id }) => {
     const placeholderComment = {

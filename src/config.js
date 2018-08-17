@@ -1,23 +1,25 @@
 import { getParameters } from './util/routeParameters'
 
-// window.config is a global/immutable object that contains some initial config parameters
+// config is a global/immutable object that contains some initial config parameters
 // Setup the default parameters.
-window.config = {
+const config = {
   ipfsUrl: 'https://ipfs.infura.io:5001',
   ethereumUrl: process.env.NODE_ENV === 'production' ? 'https://mainnet.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51' : 'https://rinkeby.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51',
   depthLimit: Infinity,
+  // depthLimit: 1,
   editorPlaceholderReply: 'What are your thoughts?',
   editorPlaceholderTop: 'Add your own post here...',
   clickThroughConfig: '', // must be base 58
+  containerId: 'town-square',
   rootCommentId: 0
 }
 
 // read in url parameters and override default config
 try {
   const configFromUrl = getParameters()
-  for (let key in window.config) {
+  for (let key in config) {
     if (configFromUrl.hasOwnProperty(key)) {
-      window.config[key] = configFromUrl[key]
+      config[key] = configFromUrl[key]
     }
   }
 } catch (err) {
@@ -25,14 +27,17 @@ try {
 }
 
 // read in attribute data
-window.config.ipfsUrl = document.currentScript.getAttribute('data-ipfs-url') || window.config.ipfsUrl
-window.config.ethereumUrl = document.currentScript.getAttribute('data-ethereum-url') || window.config.ethereumUrl
-window.config.depthLimit = Number(document.currentScript.getAttribute('data-depth-limit')) || window.config.depthLimit
-window.config.editorPlaceholderReply = document.currentScript.getAttribute('data-editor-placeholder-reply') || window.config.editorPlaceholderReply
-window.config.editorPlaceholderTop = document.currentScript.getAttribute('data-editor-placeholder-top') || window.config.editorPlaceholderTop
-window.config.clickThroughConfig = document.currentScript.getAttribute('data-click-through-config') || window.config.clickThroughConfig
-window.config.rootCommentId = Number(document.currentScript.getAttribute('data-root-comment-id')) || window.config.rootCommentId
+config.ipfsUrl = document.currentScript.getAttribute('data-ipfs-url') || config.ipfsUrl
+config.ethereumUrl = document.currentScript.getAttribute('data-ethereum-url') || config.ethereumUrl
+config.depthLimit = Number(document.currentScript.getAttribute('data-depth-limit')) || config.depthLimit
+config.editorPlaceholderReply = document.currentScript.getAttribute('data-editor-placeholder-reply') || config.editorPlaceholderReply
+config.editorPlaceholderTop = document.currentScript.getAttribute('data-editor-placeholder-top') || config.editorPlaceholderTop
+config.clickThroughConfig = document.currentScript.getAttribute('data-click-through-config') || config.clickThroughConfig
+config.containerId = document.currentScript.getAttribute('data-container-id') || config.containerId
+config.rootCommentId = Number(document.currentScript.getAttribute('data-item-id')) || config.rootCommentId
 
-Object.freeze(window.config)
+Object.freeze(config)
 
-console.log(window.config)
+console.log(config)
+
+export default config

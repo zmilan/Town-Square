@@ -1,13 +1,13 @@
 <template>
-  <li class="comment" :class="{ pending: comment.status !== COMMENT_STATUS.SAVED, error: (comment.status === COMMENT_STATUS.ERROR || comment.status === COMMENT_STATUS.MOD_ERROR), moderated: comment.moderated }">
+  <li class="comment" :class="{ pending: comment.status !== COMMENT_STATUS.SAVED, error: (comment.status === COMMENT_STATUS.ERROR) }">
     <div class="comment-content">
       <div class="byline">
         
         <identicon class="identicon" :address="comment.author"></identicon>
         
         <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-          <a v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ authorName || comment.author }}</a>
-          <a v-else>{{ authorName || comment.author }}</a>    
+          <a v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ comment.author | truncate }}</a>
+          <a v-else>{{ comment.author | truncate }}</a>    
           •
         </a>
 
@@ -24,14 +24,6 @@
           </a>
         </a>
 
-        <a class="edited" v-if="comment.edited && open && !comment.moderated">
-          *edited
-        </a>
-
-        <a class="moderated" v-if="comment.moderated">
-          Content has been moderated*
-        </a>
-
         <a v-if="comment.status !== COMMENT_STATUS.SAVED" class="by">
           <a class="status" v-if="comment.status === COMMENT_STATUS.PENDING_IPFS">saving text to IPFS</a>
           <a class="status" v-else-if="comment.status === COMMENT_STATUS.PENDING_APPROVAL">waiting for MetaMask approval</a>
@@ -42,31 +34,13 @@
             |
             <button class="error-btn" @click="clearError({ id })">cancel</button>
           </a>
-          <a class="error-status" v-else-if="comment.status === COMMENT_STATUS.MOD_ERROR">
-            Rejected
-            <button class="error-btn" @click="moderate({ id })">try again</button>
-            |
-            <button class="error-btn" @click="clearError({ id })">cancel</button>
-          </a>
-          <a class="status" v-else-if="comment.status === COMMENT_STATUS.MOD_PENDING_APPROVAL">
-            {{comment.moderated 
-              ? 'un-moderating...' 
-              : 'moderating...'}} 
-            waiting for MetaMask approval
-          </a>
-          <a class="status" v-else-if="comment.status === COMMENT_STATUS.MOD_PENDING_TX">
-            {{comment.moderated 
-              ? 'un-moderating...'
-              : 'moderating...'}}
-            Waiting for block confirmation
-          </a>
         </a>
       
       </div>
 
       <div v-show="open">
 
-        <div v-if="text && !editing && !comment.moderated">
+        <div v-if="text">
           <vue-markdown v-if="text.status === TEXT_STATUS.SUCCESS && text.value" class="text">{{text.value}}</vue-markdown>
           
           <div v-else-if="text.status === TEXT_STATUS.FETCHING" class="status text-status">
@@ -82,30 +56,12 @@
         </div>
 
         <div v-if="comment.status === COMMENT_STATUS.SAVED">
-          <transition name="slide-fade">
-            <div v-if="editing">
-              <editor :id="id" ref="editingEditor" class="editingEditor" :autosave="false" :initialContent="text.value" :placeholder="editorPlaceholderReply"></editor>
-              <div class="md-btns">
-                <button class="md-btn" @click="editing = false">Cancel</button>
-                <button class="md-btn update" @click="update">Update</button>
-              </div>
-            </div>
-          </transition>
-
-          <div class="action-btns" v-if="!replying && !editing">
-            <div v-if="depth < depthLimit - 1">
+          <div class="action-btns" v-if="!replying">
+            <div v-if="depth < $config.depthLimit - 1">
               <div v-if="ethAddress">
                 <button class="action-btn" 
                   @click="replying = true">
                   reply
-                </button>
-                <button class="action-btn" v-if="ethAddress == comment.author && !comment.moderated" 
-                  @click="editing = true">
-                  edit
-                </button>
-                <button class="action-btn" v-if="ethAddress == comment.moderator && !comment.moderated" 
-                  @click="moderate({ id })">
-                  moderate
                 </button>
               </div>
               <div v-else>
@@ -115,10 +71,10 @@
               </div>
             </div>
             <div v-else>
-              <a class="action-btn" 
-                :href="viewCommentsUrl">
+              <button class="action-btn" 
+                @click="newRootComment({ id })">
                 view comments
-              </a>
+              </button>
             </div>
           </div>
 
@@ -130,16 +86,11 @@
                 <identicon class="identicon" :address="ethAddress"></identicon>
 
                 <a class="by">
-                  <a v-if="username">{{ username }}</a>
-                  <a v-else>{{ ethAddress | truncate }}</a>
+                  <a>{{ ethAddress | truncate }}</a>
                 </a>
-
-                <button class="md-btn" v-if="!authorName" @click="$modal.show('register-name-modal')">
-                  {use a username}
-                </button>
               </div>
 
-              <editor ref="replyEditor" :id="id" :autosave="false" :placeholder="editorPlaceholderReply"></editor>
+              <editor ref="editor" :id="id" :autosave="false" :placeholder="$config.editorPlaceholder"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="replying = false">Cancel</button>
                 <button class="md-btn reply" @click="reply">Reply</button>
@@ -147,7 +98,7 @@
             </div>
           </transition>
 
-          <ul class="comment-children" v-if="depth < depthLimit">
+          <ul class="comment-children" v-if="depth < $config.depthLimit">
             <comment v-for="id in children" :key="id" :id="id" :depth="depth + 1"></comment>
           </ul>
 
@@ -172,7 +123,7 @@ import COMMENT_STATUS from '../enum/commentStatus'
 import Editor from './Editor'
 import Identicon from './Identicon'
 import Spinner from './Spinner'
-import { FETCH_COMMENTS, MODERATE_COMMENT, EDIT_COMMENT, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT } from '../store/types'
+import { FETCH_COMMENTS, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT, NEW_ROOT_COMMENT } from '../store/types'
 import { makeParamtersRoute } from '../util/routeParameters'
 import TEXT_STATUS from '../enum/textStatus'
 
@@ -188,24 +139,15 @@ export default {
   data () {
     return {
       open: true,
-      depthLimit: window.config.depthLimit,
-      editorPlaceholderReply: window.config.editorPlaceholderReply,
-      editing: false,
       replying: false,
       showDetails: false,
       COMMENT_STATUS,
       TEXT_STATUS
     }
   },
-  mounted () {
-    this.open = !this.$store.state.comments[this.id].moderated
-  },
   computed: {
     comment () {
       return this.$store.state.comments[this.id]
-    },
-    authorName () {
-      return this.$store.state.names[this.comment.author]
     },
     etherscanUrl () {
       return 'https://rinkeby.etherscan.io/address/' + this.comment.author
@@ -213,15 +155,8 @@ export default {
     ethAddress () {
       return this.$store.state.ethAddress
     },
-    username () {
-      if (this.ethAddress) {
-        return this.$store.state.names[this.ethAddress] || ''
-      } else {
-        return ''
-      }
-    },
     viewCommentsUrl () {
-      return makeParamtersRoute(this.id, window.config.clickThroughConfig)
+      return makeParamtersRoute(this.id, this.$config.clickThroughConfig)
     },
     children () {
       return this.$store.state.children[this.id] || []
@@ -230,7 +165,7 @@ export default {
       return this.$store.state.texts[this.id]
     },
     canLoadChild () {
-      return this.comment.child && !this.$store.state.comments[this.comment.child] && this.depth < this.depthLimit
+      return this.comment.child && !this.$store.state.comments[this.comment.child] && this.depth < this.$config.depthLimit
     },
     canLoadSibling () {
       return this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
@@ -238,18 +173,12 @@ export default {
   },
   methods: {
     reply () {
-      this.$refs.replyEditor.submitReply()
+      this.$refs.editor.submitReply()
       this.replying = false
     },
-    update () {
-      this.$refs.editingEditor.submitEdit()
-      this.editing = false
-    },
     retryReply () {
-      this.$store.dispatch(EDIT_COMMENT, {
-        id: this.id,
-        text: this.text.value
-      })
+      this.$refs.editor.submitReply()
+      this.replying = false
     },
     clearError () {
       this.removeComment({ id: this.id, parent: this.$store.state.parents[this.id] })
@@ -259,7 +188,7 @@ export default {
       'removeComment': REMOVE_COMMENT,
       'fetchComment': FETCH_COMMENT,
       'fetchComments': FETCH_COMMENTS,
-      'moderate': MODERATE_COMMENT,
+      'newRootComment': NEW_ROOT_COMMENT,
       'fetchText': FETCH_TEXT
     })
   }
@@ -310,7 +239,7 @@ fontSize = 1em
       content "\2026" /* ascii code for the ellipsis character */
       width 0px
     .byline
-      .identicon, .by, .toggle, .edited
+      .identicon, .by, .toggle
         display inline-block
         vertical-align middle
         font-size (0.8 * fontSize)
@@ -347,8 +276,6 @@ fontSize = 1em
           cursor pointer
         &.open
           background-color transparent
-      .edited
-        font-style italic
     .text
       margin 0 0.3em
       overflow-wrap break-word
@@ -364,17 +291,11 @@ fontSize = 1em
       width 1.3em
       height 1.3em
       margin-left 2em
-    .moderated
-      color #828282
-      font-style italic
-      font-size (0.8 * fontSize)
     .slide-fade-enter-active 
       transition: all .3s ease
     .slide-fade-enter
       transform translateX(-10px)
       opacity 0
-    .editingEditor
-      margin-top 0.3em
     .md-btns
       text-align right
       .reply, .update

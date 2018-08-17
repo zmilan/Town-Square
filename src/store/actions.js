@@ -9,36 +9,10 @@ import IPFS_STATUS from '../enum/ipfsStatus'
 import TEXT_STATUS from '../enum/textStatus'
 
 export default {
-  [types.EDIT_COMMENT]: ({ commit, dispatch, state }, { id, text }) => {
-    const parent = state.parents[id]
-    commit('UNSET_COMMENT', { id, parent })
-    commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
-
-    return ipfs.setText(text).then(ipfsHash => {
-      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_APPROVAL })
-      return contract.editComment(id, ipfsHash, state.ethAddress)
-        .on('transactionHash', () => {
-          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_TX })
-        })
-        .on('receipt', function (receipt) {
-          // remove the placeholder comment
-          commit('UNSET_COMMENT', { id, parent })
-          // load the new comment
-          dispatch(types.FETCH_COMMENT, { id: id })
-        })
-        .on('error', err => {
-          console.error(err)
-          commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
-        })
-    }).catch(() => {
-      commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
-    })
-  },
-
   [types.FETCH_COMMENT]: ({ commit, state, dispatch }, { id }) => {
     return contract.getComment(id).then(comment => {
       commit('SET_COMMENT', { comment })
-      dispatch(types.FETCH_COMMENT_RESOURCES, { comment })
+      dispatch(types.FETCH_TEXT, { id })
     })
   },
 
@@ -53,7 +27,6 @@ export default {
       })
     } else {
       if (comment.child && numberToLoad > 0 && depth > 0) {
-        console.log(`child (${numberToLoad})`, comment.id + ' -> ' + comment.child)
         numberToLoad--
         // get the child comment
         dispatch(types.FETCH_COMMENT, {
@@ -70,7 +43,6 @@ export default {
       }
 
       if (comment.sibling && numberToLoad > 0) {
-        console.log(`sibling (${numberToLoad})`, comment.id + ' -> ' + comment.sibling)
         numberToLoad--
         // get the sibling comment
         dispatch(types.FETCH_COMMENT, {
@@ -92,26 +64,6 @@ export default {
     }).catch(console.error)
   },
 
-  [types.FETCH_COMMENT_RESOURCES]: ({ state, dispatch }, { comment }) => {
-    if (comment) {
-      dispatch(types.FETCH_NAME, { address: comment.author })
-      if (comment.author !== comment.moderator) {
-        dispatch(types.FETCH_NAME, { address: comment.moderator })
-      }
-      dispatch(types.FETCH_TEXT, { id: comment.id })
-    }
-  },
-
-  [types.FETCH_NAME]: ({ commit, state }, { address }) => {
-    if (state.names[address]) {
-      return state.names[address]
-    } else {
-      return contract.getName(address).then(name => {
-        commit('SET_NAME', { address, name })
-      })
-    }
-  },
-
   [types.FETCH_TEXT]: ({ commit, state }, { id }) => {
     const ipfsHash = state.comments[id].ipfsHash
     commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.FETCHING })
@@ -122,22 +74,6 @@ export default {
       commit('SET_TEXT_STATUS', { id, status: TEXT_STATUS.ERROR })
       commit('SET_TEXT_ERROR_MESSAGE', { id, message: err.message })
     })
-  },
-
-  [types.MODERATE_COMMENT]: ({ commit, state }, { id }) => {
-    commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_PENDING_APPROVAL })
-    return contract.moderateComment(id, state.ethAddress)
-      .on('transactionHash', () => {
-        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_PENDING_TX })
-      })
-      .on('receipt', function (receipt) {
-        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.SAVED })
-        commit('SET_COMMENT_MODERATION', { id })
-      })
-      .on('error', err => {
-        console.error(err)
-        commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.MOD_ERROR })
-      })
   },
 
   [types.PUBLISH_COMMENT]: ({ commit, state, dispatch }, { parent, text }) => {
@@ -185,10 +121,6 @@ export default {
     return ipfs.setText(text).then(ipfsHash => {
       return contract.startThread(ipfsHash, state.ethAddress, moderator)
     })
-  },
-
-  [types.REGISTER_NAME]: ({ commit, state }, { text }) => {
-    return contract.registerName(text, state.ethAddress)
   },
 
   [types.REMOVE_COMMENT]: ({ commit, state }, { id, parent }) => {

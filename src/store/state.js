@@ -4,7 +4,6 @@ import IPFS_STATUS from '../enum/ipfsStatus'
 export default {
   children: {},
   comments: {},
-  names: {},
   texts: {},
   parents: {},
   ethAddress: null,

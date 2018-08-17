@@ -4,7 +4,7 @@
 
 <script>
 import markdownEditor from 'vue-simplemde/src/markdown-editor'
-import { PUBLISH_COMMENT, EDIT_COMMENT, PUBLISH_THREAD } from '../store/types'
+import { PUBLISH_COMMENT, PUBLISH_THREAD } from '../store/types'
 
 export default {
   name: 'editor',
@@ -31,13 +31,6 @@ export default {
     submitReply () {
       this.$store.dispatch(PUBLISH_COMMENT, {
         parent: this.id,
-        text: this.content
-      })
-      this.content = ''
-    },
-    submitEdit () {
-      this.$store.dispatch(EDIT_COMMENT, {
-        id: this.id,
         text: this.content
       })
       this.content = ''

@@ -1,5 +1,4 @@
 import bs58 from 'bs58'
-import sanitize from 'sanitize-html'
 import Web3 from 'web3'
 import COMMENT_STATUS from '../enum/commentStatus'
 import Emitter from '../util/emitter'
@@ -15,13 +14,6 @@ function ipfsHashToBytes32 (ipfsHash) {
 }
 
 export default {
-  addComment: function (parent, ipfsHash, account) {
-    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
-    return contract.methods.addComment(parent, ipfsBytes32).send({
-      from: account
-    })
-  },
-
   connectToWeb3: function (ethereumUrl) {
     if (typeof window.web3 !== 'undefined') {
       // connect via metamask
@@ -47,22 +39,12 @@ export default {
     })
   },
 
-  editComment: function (id, ipfsHash, account) {
-    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
-    return contract.methods.editComment(id, ipfsBytes32).send({
-      from: account
-    })
-  },
-
   getComment: function (index) {
     return Promise.all([
       contract.methods.comments__child(index).call(),
       contract.methods.comments__sibling(index).call(),
       contract.methods.comments__author(index).call(),
       contract.methods.comments__ipfs_hash(index).call(),
-      contract.methods.comments__moderator(index).call(),
-      contract.methods.comments__moderated(index).call(),
-      contract.methods.comments__edited(index).call(),
       contract.methods.comments__date_posted(index).call()
     ]).then(results => {
       const comment = {
@@ -70,10 +52,7 @@ export default {
         sibling: Number(results[1]),
         author: results[2].toLowerCase(),
         ipfsHash: results[3],
-        moderator: results[4].toLowerCase(),
-        moderated: results[5],
-        edited: results[6],
-        datePosted: results[7],
+        datePosted: results[4],
         status: COMMENT_STATUS.SAVED,
         id: index
       }
@@ -90,33 +69,16 @@ export default {
     })
   },
 
-  getName: function (address) {
-    if (address === '0x0000000000000000000000000000000000000000') {
-      return Promise.resolve('[removed]')
-    } else {
-      return contract.methods.names(address).call().then(nameBytes32 => {
-        const ascii = web3.utils.toAscii(nameBytes32)
-        return sanitize(ascii.replace(/\0/g, '')) // strip out null characters /u0000
-      })
-    }
-  },
-
-  moderateComment: function (id, account) {
-    return contract.methods.moderateComment(id).send({
-      from: account
-    })
-  },
-
-  startThread: function (ipfsHash, account, moderator) {
+  publishComment: function (parent, ipfsHash, account) {
     const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
-    return contract.methods.startThread(moderator, ipfsBytes32).send({
+    return contract.methods.publishComment(parent, ipfsBytes32).send({
       from: account
     })
   },
 
-  registerName: function (name, account) {
-    const nameBytes32 = web3.utils.fromAscii(name)
-    return contract.methods.registerName(nameBytes32).send({
+  publishThread: function (ipfsHash, account) {
+    const ipfsBytes32 = ipfsHashToBytes32(ipfsHash)
+    return contract.methods.publishThread(ipfsBytes32).send({
       from: account
     })
   }
