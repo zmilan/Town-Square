@@ -1,160 +1,100 @@
 <template>
-  <div class="item-view">
-    
-    <about-pigeon-modal />
-    <create-thread-modal />
-    <settings-modal />
-    <notification group="ipfs-notification"/>
-    <notification group="ethereum-notification"/>
+<div>
+  <about-modal />
+  <create-thread-modal />
+  <settings-modal />
+  <notification group="ipfs-notification"/>
+  <notification group="ethereum-notification"/>
+  
+  <Thread :id="threadId" v-if="connected"/>
 
-    <template v-if="rootComment">
-      <div class="item-view-header">
-        <div class="title-block">
-          <!-- TODO, make text a component -->
-          <div v-if="text && text.value">
-            <vue-markdown v-once class="text">{{ text.value }}</vue-markdown>
-          </div>
+  <hr class="divider">
 
-          <div class="byline">
-
-            <identicon class="identicon" :address="rootComment.author"></identicon>
-
-            <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-              <a>{{ rootComment.author | truncate }}</a>    
-              •
-            </a>
-            <a class="by">
-              <a>{{ rootComment.datePosted | timeAgo }}</a>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="ethAddress">
-        <editor :id="rootComment.id" ref="editor" :autosave="false" :placeholder="$config.editorPlaceholderTop"></editor>
-        <button class="add-comment-btn" @click="addComment">add comment</button>
-      </div>
-      <hr class="divider">
-
-      <div class="item-view-comments">
-        <p class="item-view-comments-header">
-          <spinner :show="loading" class="spinner"></spinner>
-        </p>
-        <ul v-if="!loading && rootComment.child" class="comment-children">
-          <comment v-for="id in children" :key="id" :id="id" :depth="1"></comment>
-        </ul>
-        <div v-if="!loading && !rootComment.child" class="no-comments-container">
-          <div class="no-comments-msg">Be the first to comment 🕊️</div>
-        </div>
-      </div>
-
-      <hr class="divider">
-
-      <div>
-        <span>
-          <button class="logo footer-btn" @click="$modal.show('about-pigeon-modal')">
-            ⛲ How does this work?
-          </button>
-          |
-          <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-            🌳 add Town Square to your site
-          </button>
-          |
-          <button class="footer-btn" @click="$modal.show('settings-modal')">
-            ⚙️ settings
-          </button>
-        </span>
-        <div class="footer-right">
-          <button class="footer-btn footer-btn-right">
-            version {{version}}
-          </button>
-        </div>
-      </div>
-    </template>
+  <div>
+    <span>
+      <button class="logo footer-btn" @click="$modal.show('about-modal')">
+        ⛲ How does this work?
+      </button>
+      |
+      <button class="footer-btn" @click="$modal.show('create-thread-modal')">
+        🌳 add Town Square to your site
+      </button>
+      |
+      <button class="footer-btn" @click="$modal.show('settings-modal')">
+        ⚙️ settings
+      </button>
+    </span>
+    <div class="footer-right">
+      <button class="footer-btn footer-btn-right">
+        version {{version}}
+      </button>
+    </div>
   </div>
+</div>
 </template>
 
 <script>
 import debounce from 'lodash.debounce'
 import throttle from 'lodash.throttle'
 import { mapActions } from 'vuex'
-import VueMarkdown from 'vue-markdown'
 
-import AboutPigeonModal from './components/modals/About-Pigeon-Modal'
-import Comment from './components/Comment'
+import Thread from './components/Thread'
+import ETHEREUM_STATUS from './enum/ethereumStatus'
+import IPFS_STATUS from './enum/ipfsStatus'
+import AboutModal from './components/modals/About-Modal'
 import CreateThreadModal from './components/modals/Create-Thread-Modal'
-import Editor from './components/Editor'
 import Emitter from './util/emitter'
-import Identicon from './components/Identicon'
 import Notification from './components/Notification'
 import SettingsModal from './components/modals/Settings-Modal'
 import Spinner from './components/Spinner'
-import { FETCH_COMMENT, FETCH_COMMENTS, UPDATE_ETH_ADDRESS, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
-import ETHEREUM_STATUS from './enum/ethereumStatus'
-import IPFS_STATUS from './enum/ipfsStatus'
+import { SWITCH_THREAD, UPDATE_ETH_ADDRESS, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
 
 export default {
-  name: 'town-square',
+  name: 'app',
   components: {
-    AboutPigeonModal,
-    Comment,
+    Thread,
+    AboutModal,
     CreateThreadModal,
-    Editor,
-    Identicon,
     Notification,
     SettingsModal,
-    Spinner,
-    VueMarkdown
+    Spinner
   },
   data: () => ({
     IPFS_STATUS,
-    loading: false, // TODO, start with loading = true
-    showDetails: false, // TODO, make this a popover
     version: process.env.version
   }),
   computed: {
-    children () {
-      return this.$store.state.children[this.$config.rootCommentId] || []
+    connected () {
+      const ethConnected = this.$store.state.ethereumStatus === ETHEREUM_STATUS.SUCCESS
+      const ipfsConnected = this.$store.state.ipfsStatus === IPFS_STATUS.SUCCESS
+      return ethConnected && ipfsConnected
     },
-    ethAddress () {
-      return this.$store.state.ethAddress
-    },
-    rootComment () {
-      return this.$store.state.comments[this.$config.rootCommentId]
-    },
-    text () {
-      return this.$store.state.texts[this.$config.rootCommentId]
+    threadId () {
+      return this.$store.state.threadId
     }
   },
   beforeMount () {
-    this.updateEthereumConnection({url: this.$config.ethereumUrl}).then(() => {
-      return this.updateIpfsConnection({url: this.$config.ipfsUrl})
-    }).then(() => {
-      // Load the root comment first
-      this.fetchComment({id: this.$config.rootCommentId}).then(() => {
-        if (this.rootComment && this.rootComment.child) {
-          // Now start load the other comments
-          this.fetchComments({
-            id: this.rootComment.child,
-            numberToLoad: 15,
-            depth: Math.min(this.$config.depthLimit - 1, 3)
-          })
-        }
-      })
-    })
-  },
-  created () {
     // register metamask event listeners
     Emitter.on('Metamask-Update', debounce(function (details) {
-      try {
+      if (details) {
         this.updateEthAddress({ address: details.selectedAddress })
-      } catch (err) {
-        console.error(err)
       }
     }.bind(this)), 1000)
+
+    this.switchThread({ id: this.$config.threadId })
+    this.updateEthereumConnection({url: this.$config.ethereumUrl})
+    this.updateIpfsConnection({url: this.$config.ipfsUrl})
+  },
+  methods: {
+    ...mapActions({
+      'switchThread': SWITCH_THREAD,
+      'updateEthAddress': UPDATE_ETH_ADDRESS,
+      'updateEthereumConnection': UPDATE_ETHEREUM_CONNECTION,
+      'updateIpfsConnection': UPDATE_IPFS_CONNECTION
+    })
   },
   watch: {
-    ipfsStatus: throttle(function (status) {
+    '$store.state.ipfsStatus': throttle(function (status) {
       this.$notify({
         group: 'ipfs-notification',
         clean: true
@@ -176,7 +116,7 @@ export default {
         })
       }
     }, 1000),
-    ethereumStatus: throttle(function (status) {
+    '$store.state.ethereumStatus': throttle(function (status) {
       this.$notify({
         group: 'ethereum-notification',
         clean: true
@@ -202,76 +142,11 @@ export default {
         })
       }
     }, 1000)
-  },
-  methods: {
-    addComment () {
-      this.$refs.editor.submitReply()
-    },
-    ...mapActions({
-      'fetchComment': FETCH_COMMENT,
-      'fetchComments': FETCH_COMMENTS,
-      'updateEthAddress': UPDATE_ETH_ADDRESS,
-      'updateEthereumConnection': UPDATE_ETHEREUM_CONNECTION,
-      'updateIpfsConnection': UPDATE_IPFS_CONNECTION
-    })
   }
 }
-
 </script>
 
 <style lang="stylus" scoped>
-.item-view-header
-  background-color #fff
-  display flex
-  flex-direction row
-  .title-block
-    margin: 0 0 0.5em 0.5em
-    .text
-      font-size 1.1em
-      overflow-wrap break-word
-    .byline
-      font-size 0.8em
-      color #828282
-      .identicon
-        width: 2em
-      .identicon, .by
-        display inline-block
-        vertical-align middle
-.add-comment-btn
-  background none
-  border 2px solid
-  color #444
-  margin 1em
-  &:hover
-    color black
-    cursor pointer
-.item-view-comments
-  background-color #fff
-  margin-top 1px
-  .no-comments-container
-    height 100px
-    position relative
-    .no-comments-msg
-      position absolute
-      top 50%
-      left 50%
-      transform translateX(-50%) translateY(-50%)
-      white-space nowrap
-.item-view-comments-header
-  margin 0
-  font-size 1.1em
-  padding 0.2em 0
-  position relative
-  .spinner
-    display inline-block
-    margin -15px 0
-    width 100%
-.divider
-  border 0
-  height 1px
-  background #ddd
-.logo
-  font-size 1.25em
 .footer-btn
   font-size 0.8em
   background none
@@ -291,21 +166,4 @@ export default {
       font-size 1.25em
   .footer-right
     float none
-</style>
-
-<style lang="stylus">
-/* not scoped */
-.comment-children
-  list-style-type none
-  padding 0
-  margin 0
-.item-view-header
-  .title-block
-    .text
-      p
-        margin 0.2em 0
-</style>
-
-<style>
-  @import '~simplemde/dist/simplemde.min.css';
 </style>

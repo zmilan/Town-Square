@@ -6,7 +6,7 @@ import Emitter from '../util/emitter'
 let web3, contract
 
 //eslint-disable-next-line
-const abi = [{"name": "Comment", "inputs": [{"type": "int128", "name": "index", "indexed": false}, {"type": "address", "name": "author", "indexed": true}, {"type": "int128", "name": "_parent", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "__init__", "outputs": [], "inputs": [], "constant": false, "payable": false, "type": "constructor"}, {"name": "startThread", "outputs": [], "inputs": [{"type": "address", "name": "_moderator"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 258681}, {"name": "addComment", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "_parent"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 310643}, {"name": "moderateComment", "outputs": [], "inputs": [{"type": "int128", "name": "_commentIndex"}, {"type": "bool", "name": "_moderated"}], "constant": false, "payable": false, "type": "function", "gas": 36166}, {"name": "editComment", "outputs": [], "inputs": [{"type": "int128", "name": "_commentIndex"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 71353}, {"name": "registerName", "outputs": [], "inputs": [{"type": "bytes32", "name": "_name"}], "constant": false, "payable": false, "type": "function", "gas": 35526}, {"name": "comments__child", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 934}, {"name": "comments__sibling", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 964}, {"name": "comments__author", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 988}, {"name": "comments__ipfs_hash", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1024}, {"name": "comments__moderator", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1054}, {"name": "comments__moderated", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1084}, {"name": "comments__edited", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1114}, {"name": "comments__date_posted", "outputs": [{"type": "uint256", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1144}, {"name": "names", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "address", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 1045}, {"name": "comment_count", "outputs": [{"type": "int128", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 903}]
+const abi = [{"name": "Comment", "inputs": [{"type": "int128", "name": "index", "indexed": true}, {"type": "address", "name": "author", "indexed": true}, {"type": "int128", "name": "_parent", "indexed": true}], "anonymous": false, "type": "event"}, {"name": "__init__", "outputs": [], "inputs": [], "constant": false, "payable": false, "type": "constructor"}, {"name": "publishThread", "outputs": [], "inputs": [{"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 183171}, {"name": "publishComment", "outputs": [], "inputs": [{"type": "int128", "name": "_parent"}, {"type": "bytes32", "name": "_ipfs_hash"}], "constant": false, "payable": false, "type": "function", "gas": 234579}, {"name": "comments__child", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 844}, {"name": "comments__sibling", "outputs": [{"type": "int128", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 874}, {"name": "comments__author", "outputs": [{"type": "address", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 898}, {"name": "comments__ipfs_hash", "outputs": [{"type": "bytes32", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 934}, {"name": "comments__date_posted", "outputs": [{"type": "uint256", "name": "out"}], "inputs": [{"type": "int128", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 964}, {"name": "comment_count", "outputs": [{"type": "int128", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 693}]
 const contractAddress = process.env.contractAddress
 
 function ipfsHashToBytes32 (ipfsHash) {
@@ -28,13 +28,17 @@ export default {
 
     return web3.eth.net.getNetworkType().then(type => {
       console.log('connected to ethereum ' + type + ' network')
-      if (type === 'main' && process.env.NODE_ENV !== 'production') {
-        throw new Error('Not connected to mainnet')
-      } else if (type === 'rinkeby' && process.env.NODE_ENV !== 'development') {
-        throw new Error('Not connected to rinkeby (development)')
-      } else {
-        // everything's set up right
+
+      // fetch accounts and emit the results
+      web3.eth.getAccounts().then(accounts => {
+        Emitter.emit('Metamask-Update', { selectedAddress: accounts[0] })
+      })
+
+      if ((type === 'main' && process.env.NODE_ENV === 'production') ||
+          (type === 'rinkeby' && process.env.NODE_ENV === 'development')) {
         contract = new web3.eth.Contract(abi, contractAddress)
+      } else {
+        throw new Error('Not connected to mainnet')
       }
     })
   },

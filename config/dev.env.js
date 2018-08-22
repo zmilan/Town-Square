@@ -2,7 +2,7 @@ var merge = require('webpack-merge')
 var defaultEnv = require('./default.env')
 
 module.exports = merge(defaultEnv, {
-  version: '"0.1.0"',
+  version: '"1"',
   NODE_ENV: '"development"',
-  contractAddress: '"0xdacc63b45cd550be91b971b9246fb6f08fa148a7"' // rinkeby
+  contractAddress: '"0x506b83f21edc048e50b4732e3227ac59ea341a31"' // rinkeby
 })

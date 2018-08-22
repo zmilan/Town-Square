@@ -19,8 +19,8 @@
         <a class="toggle" :class="{ open }">
           <a @click="open = !open">
             {{open
-                ? '[-]'
-                : '[+] collapsed'}}
+              ? '[-]'
+              : '[+] collapsed'}}
           </a>
         </a>
 
@@ -59,20 +59,15 @@
           <div class="action-btns" v-if="!replying">
             <div v-if="depth < $config.depthLimit - 1">
               <div v-if="ethAddress">
-                <button class="action-btn" 
+                <button class="action-btn " 
                   @click="replying = true">
-                  reply
-                </button>
-              </div>
-              <div v-else>
-                <button class="action-btn" @click="$modal.show('about-pigeon-modal')">
                   reply
                 </button>
               </div>
             </div>
             <div v-else>
               <button class="action-btn" 
-                @click="newRootComment({ id })">
+                @click="switchThread({ id })">
                 view comments
               </button>
             </div>
@@ -123,7 +118,7 @@ import COMMENT_STATUS from '../enum/commentStatus'
 import Editor from './Editor'
 import Identicon from './Identicon'
 import Spinner from './Spinner'
-import { FETCH_COMMENTS, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT, NEW_ROOT_COMMENT } from '../store/types'
+import { FETCH_COMMENTS, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT, NEW_ROOT_COMMENT, SWITCH_THREAD, PUBLISH_COMMENT } from '../store/types'
 import { makeParamtersRoute } from '../util/routeParameters'
 import TEXT_STATUS from '../enum/textStatus'
 
@@ -173,23 +168,26 @@ export default {
   },
   methods: {
     reply () {
-      this.$refs.editor.submitReply()
+      this.$refs.editor.submitComment()
       this.replying = false
     },
     retryReply () {
-      this.$refs.editor.submitReply()
-      this.replying = false
+      const parent = this.$store.state.parents[this.id]
+      const text = this.text.value
+      this.removeComment({ parent, id: this.id })
+      this.publishComment({ parent, text })
     },
     clearError () {
-      this.removeComment({ id: this.id, parent: this.$store.state.parents[this.id] })
-      this.fetchComment({ id: this.id })
+      this.removeComment({ parent: this.$store.state.parents[this.id], id: this.id })
     },
     ...mapActions({
       'removeComment': REMOVE_COMMENT,
       'fetchComment': FETCH_COMMENT,
       'fetchComments': FETCH_COMMENTS,
       'newRootComment': NEW_ROOT_COMMENT,
-      'fetchText': FETCH_TEXT
+      'fetchText': FETCH_TEXT,
+      'switchThread': SWITCH_THREAD,
+      'publishComment': PUBLISH_COMMENT
     })
   }
 }
@@ -201,7 +199,7 @@ fontSize = 1em
   background-color aliceblue
   color #828282
 .error
-  background-color #ffe8e8
+  background-color #ffddda
 .comment-children
   .comment-children
     margin-left 0.5em

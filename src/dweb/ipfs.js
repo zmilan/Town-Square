@@ -23,6 +23,7 @@ export default {
   },
   setText: text => {
     return ipfs.add(new Buffer(text)).then(results => {
+      console.log('=====', results)
       return results[0].hash
     })
   },

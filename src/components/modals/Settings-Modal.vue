@@ -1,13 +1,15 @@
 <template>
-<modal name="settings-modal" @before-open="beforeOpen" transition="pop-out" :width="300" :height="400">
+<modal name="settings-modal" @before-open="beforeOpen" transition="pop-out" :width="modalWidth" :height="400">
   <div class="container">
+    <button class="btn close" @click="$modal.hide('settings-modal')">[X]</button>
     <div class="input-field">
       Ethereum node url
       <div>
         <input type="text" v-model="ethereumUrl" class="input-box" :disabled="usingMetaMask">
       </div>
       <div v-if="usingMetaMask" class="mm-msg">
-        * already connected via MetaMask
+        already connected via MetaMask
+        <p>disable MetaMask if you'd like to connect to a custom node</p>
       </div>
     </div>
     <div class="input-field">
@@ -30,8 +32,15 @@ export default {
     return {
       usingMetaMask: false,
       ethereumUrl: '',
-      ipfsUrl: ''
+      ipfsUrl: '',
+      modalWidth: 400
     }
+  },
+  created () {
+    this.modalWidth = window.innerWidth < this.modalWidth
+      ? window.innerWidth
+      : this.modalWidth
+    console.log('modal width', this.modalWidth)
   },
   methods: {
     beforeOpen (event) {

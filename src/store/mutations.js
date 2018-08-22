@@ -55,7 +55,9 @@ export default {
   },
   SET_COMMENT_CHILD: (state, { id, child }) => {
     // this mutation gets called when a new comment is added by the user.
-    state.comments[id].child = child
+    if (state.comments[id]) {
+      state.comments[id].child = child
+    }
   },
   SET_COMMENT_STATUS: (state, {id, status}) => {
     Vue.set(state.comments[id], 'status', status)
@@ -74,6 +76,9 @@ export default {
   },
   SET_IPFS_URL: (state, { url }) => {
     state.ipfsUrl = url
+  },
+  SET_PENDING_THREAD_ID: (state, { id }) => {
+    state.pendingThreadId = id
   },
   SET_PLACEHOLDER_COMMENT: (state, { parent, text, id }) => {
     const placeholderComment = {
@@ -101,6 +106,9 @@ export default {
     }
     Vue.set(state.texts[id], 'status', status)
   },
+  SET_THREAD_ID: (state, { id }) => {
+    state.threadId = id
+  },
   SET_TEXT_VALUE: (state, { id, value }) => {
     if (!state.texts[id]) {
       // text object doesn't exist yet, go ahead and create it
@@ -121,7 +129,16 @@ export default {
     // remove from parents array
     state.parents[id] = null
 
+    // remove the child field on the parent comment
+    if (state.comments[parent]) {
+      state.comments[parent].child = state.children[parent][0] || 0
+    }
+
     // remove the text
     state.texts[id] = null
+  },
+  UNSET_PENDING_THREAD: (state) => {
+    state.comments[state.pendingThreadId] = null
+    state.pendingThreadId = null
   }
 }

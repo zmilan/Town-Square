@@ -6,9 +6,11 @@ export default {
   comments: {},
   texts: {},
   parents: {},
+  pendingThreadId: null,
   ethAddress: null,
   ethereumUrl: '',
   ethereumStatus: ETHEREUM_STATUS.UNCHECKED,
   ipfsStatus: IPFS_STATUS.UNCHECKED,
-  ipfsUrl: ''
+  ipfsUrl: '',
+  threadId: 0
 }

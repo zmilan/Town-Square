@@ -8,6 +8,11 @@ import ETHEREUM_STATUS from '../enum/ethereumStatus'
 import IPFS_STATUS from '../enum/ipfsStatus'
 import TEXT_STATUS from '../enum/textStatus'
 
+function getMaxCommentId (state) {
+  const ids = Object.keys(state.comments).map(Number)
+  return Math.max(...ids)
+}
+
 export default {
   [types.FETCH_COMMENT]: ({ commit, state, dispatch }, { id }) => {
     return contract.getComment(id).then(comment => {
@@ -76,36 +81,59 @@ export default {
     })
   },
 
-  [types.PUBLISH_COMMENT]: ({ commit, state, dispatch }, { parent, text }) => {
-    // add a placeholder comment
-    // the placeholder Id needs to be bigger than all of the other ones
-    // because it's the "most recent" comment
-    const ids = Object.keys(state.comments).map(Number)
-    const maxId = Math.max(...ids)
-    const id = maxId + 1
+  [types.PUBLISH_COMMENT]: ({ commit, state, dispatch }, { parent, text, id }) => {
+    // id is optional, an id will be determined if no id is provided
+    if (!id) {
+      // the placeholder Id needs to be bigger than all of the other ones
+      // because it's the "most recent" comment
+      const maxId = getMaxCommentId(state)
+      id = maxId + 1
+    }
     text = sanitize(text)
+
+    // add a placeholder comment
     commit('SET_PLACEHOLDER_COMMENT', { parent, text, id })
+    commit('SET_COMMENT_CHILD', { id: parent, child: id })
+
+    // If parent is 0 we are making a new thread, set the pending thread id
+    if (parent === 0) {
+      commit('SET_PENDING_THREAD_ID', { id })
+    }
 
     // Upload the content to ipfs
-    return ipfs.setText(text).then(ipfsHash => {
+    ipfs.setText(text).then(ipfsHash => {
       commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_APPROVAL })
+
+      // if the parent is 0 then the new comment needs to be pubished as a new thread
+      const publish = parent === 0
+        ? contract.publishThread(ipfsHash, state.ethAddress)
+        : contract.publishComment(parent, ipfsHash, state.ethAddress)
+
       // now save the comment to the blockchain
-      return contract.addComment(parent, ipfsHash, state.ethAddress)
-        .on('transactionHash', () => {
+      return publish
+        .once('transactionHash', () => {
           // this gets called when user clicks "confirm" in MetaMask
           commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.PENDING_TX })
         })
-        .on('receipt', function (receipt) {
+        .once('receipt', function (receipt) {
+          console.log('reciept', receipt)
           // this gets called when the tx gets it's first confirmation
           const newCommentId = Number(receipt.events.Comment.returnValues[0])
-          // parent.child must always point to the most recent child
-          commit('SET_COMMENT_CHILD', { id: parent, child: newCommentId })
+
+          console.log('newCommentid', newCommentId)
           // remove the placeholder comment
           commit('UNSET_COMMENT', { id, parent })
+          // parent.child must always point to the most recent child
+          commit('SET_COMMENT_CHILD', { id: parent, child: newCommentId })
+          console.log('parent', parent)
           // load the new comment
           dispatch(types.FETCH_COMMENT, { id: newCommentId })
+          if (parent === 0) {
+            console.log('setpending thread', newCommentId)
+            commit('SET_PENDING_THREAD_ID', { id: newCommentId })
+          }
         })
-        .on('error', err => {
+        .once('error', err => {
           // web3 error
           console.error(err)
           commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
@@ -115,20 +143,26 @@ export default {
       console.error(err)
       commit('SET_COMMENT_STATUS', { id, status: COMMENT_STATUS.ERROR })
     })
+
+    return id
   },
 
-  [types.PUBLISH_THREAD]: ({ commit, state }, { moderator, text }) => {
-    return ipfs.setText(text).then(ipfsHash => {
-      return contract.startThread(ipfsHash, state.ethAddress, moderator)
-    })
+  [types.SWITCH_THREAD]: ({ commit }, { id }) => {
+    commit('SET_THREAD_ID', { id })
   },
 
   [types.REMOVE_COMMENT]: ({ commit, state }, { id, parent }) => {
     commit('UNSET_COMMENT', { id, parent })
   },
 
+  [types.REMOVE_PENDING_THREAD]: ({ commit }) => {
+    commit('UNSET_PENDING_THREAD')
+  },
+
   [types.UPDATE_ETH_ADDRESS]: ({ commit, state }, { address }) => {
-    commit('SET_ETH_ADDRESS', { address })
+    if (address !== state.ethAddress) {
+      commit('SET_ETH_ADDRESS', { address })
+    }
   },
 
   [types.UPDATE_ETHEREUM_CONNECTION]: ({ commit, state }, { url }) => {

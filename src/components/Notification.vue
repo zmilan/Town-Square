@@ -1,7 +1,7 @@
 <template>
   <notifications :group="group" position="top right" animation-name="v-fade-right">
     <template slot="body" slot-scope="props">
-    <div class="custom-template" :class="props.item.type">
+    <div class="custom-template" :class="'notification-' + props.item.type">
       <div class="custom-template-content">
         <div class="custom-template-title">
           {{props.item.title}}
@@ -51,9 +51,9 @@ export default {
 <style lang="stylus">
 .notifications
   z-index 500
-.warn
+.notification-warn
   background #ffb648
-.error
+.notification-error
   background #E54D42
 .custom-template
   text-align center

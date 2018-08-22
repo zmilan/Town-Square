@@ -4,7 +4,7 @@ export const makeParamtersRoute = function (rootCommentId, base58EncodedConfig) 
   const routeArray = window.location.toString().split('/')
 
   // remove comment id
-  const commentIndex = routeArray.lastIndexOf('item')
+  const commentIndex = routeArray.lastIndexOf('thread')
   if (commentIndex > 0 && routeArray.length > commentIndex + 1) {
     routeArray.splice(commentIndex, 2)
   }
@@ -34,11 +34,11 @@ export const getParameters = function () {
   const routeArray = window.location.toString().split('/')
 
   // read comment id
-  const commentIndex = routeArray.lastIndexOf('item')
+  const commentIndex = routeArray.lastIndexOf('thread')
   if (commentIndex > 0 && routeArray.length > commentIndex + 1) {
     const rootCommentId = Number(routeArray[commentIndex + 1])
     if (rootCommentId) {
-      parameters.rootCommentId = rootCommentId
+      parameters.threadId = rootCommentId
     }
   }
 
