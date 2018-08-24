@@ -11,7 +11,7 @@ const config = {
   maxTextBytes: 1024 * 100, // 100 kB
   threadId: 0,
   initialThreadId: 0,
-  ipfsHash: 'QmWjzf9eBdAx8xNcwXNPx4Xnm25Vc6UBYoRcB5BJANDiPN',
+  ipfsHash: 'QmbeWHQan8JcL8Qbsix8q3ZzgvrVZFL1rpedURJVooHGLq',
   embedded
 }
 
