@@ -36,9 +36,9 @@
       </button>
     </span>
     <div class="footer-right">
-      <button class="footer-btn footer-btn-right">
+      <a href="https://github.com/WillWhiteneck/Town-Square" target="_blank" class="footer-btn footer-btn-right">
         version {{version}}
-      </button>
+      </a>
     </div>
   </div>
 </div>
