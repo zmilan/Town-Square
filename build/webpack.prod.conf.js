@@ -34,11 +34,11 @@ var webpackConfig = merge(baseWebpackConfig, {
     }),
     new UglifyJSPlugin({
       uglifyOptions: { 
-        ecma: 8,
-        compress: {
-          warnings: false,
-          drop_console: true
-        }
+        ecma: 8//,
+        // compress: {
+        //   warnings: false,
+        //   drop_console: true
+        // }
       },
       sourceMap: true
     }),
@@ -48,11 +48,11 @@ var webpackConfig = merge(baseWebpackConfig, {
     }),
     // Compress extracted CSS. We are using this plugin so that possible
     // duplicated CSS from different components can be deduped.
-    new OptimizeCSSPlugin({
-      cssProcessorOptions: {
-        safe: true
-      }
-    }),
+    // new OptimizeCSSPlugin({
+    //   cssProcessorOptions: {
+    //     safe: true
+    //   }
+    // }),
     // generate dist index.html with correct asset hash for caching.
     // you can customize output by editing /index.html
     // see https://github.com/ampedandwired/html-webpack-plugin

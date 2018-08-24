@@ -32,7 +32,6 @@ export default {
           'code',
           'quote',
           'unordered-list',
-          'ordered-list',
           'link',
           '|',
           'preview',
@@ -57,6 +56,7 @@ export default {
 .markdown-editor .CodeMirror, .markdown-editor .CodeMirror-scroll
   min-height 100px
   max-height 300px
+  height auto
 .editor-toolbar::before
   margin 0
 .editor-toolbar::after
