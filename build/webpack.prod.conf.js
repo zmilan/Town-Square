@@ -33,7 +33,13 @@ var webpackConfig = merge(baseWebpackConfig, {
       'process.env': env
     }),
     new UglifyJSPlugin({
-      uglifyOptions: { ecma: 8 },      
+      uglifyOptions: { 
+        ecma: 8,
+        compress: {
+          warnings: false,
+          drop_console: true
+        }
+      },
       sourceMap: true
     }),
     // extract css into its own file
@@ -51,9 +57,7 @@ var webpackConfig = merge(baseWebpackConfig, {
     // you can customize output by editing /index.html
     // see https://github.com/ampedandwired/html-webpack-plugin
     new HtmlWebpackPlugin({
-      filename: process.env.NODE_ENV === 'testing'
-        ? 'index.html'
-        : config.build.index,
+      filename: config.build.index,
       template: 'index.html',
       inject: true,
       minify: {
@@ -62,18 +66,8 @@ var webpackConfig = merge(baseWebpackConfig, {
         removeAttributeQuotes: true
         // more options:
         // https://github.com/kangax/html-minifier#options-quick-reference
-      },
-      // necessary to consistently work with multiple chunks via CommonsChunkPlugin
-      chunksSortMode: 'dependency'
-    }),
-    // copy custom static assets
-    new CopyWebpackPlugin([
-      {
-        from: path.resolve(__dirname, '../static'),
-        to: config.build.assetsSubDirectory,
-        ignore: ['.*']
       }
-    ])
+    })
   ]
 })
 

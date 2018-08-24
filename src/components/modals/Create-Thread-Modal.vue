@@ -72,11 +72,11 @@ export default {
     htmlSnippet () {
       return '\n' +
       '<div id="my-town-square"></div>\n' +
+      '<link href="https://cdn.rawgit.com/WillWhiteneck/Town-Square/665707b4/dist/town-square.css" rel="stylesheet">\n' +
       '<script\n' +
-      '  src="https://cdn.rawgit.com/WillWhiteneck/ether-comments/master/src/config.js?token=AF0DkARvUKi4SosQiaNbh6VzASw41zM7ks5bhYndwA%3D%3D"\n' +
+      '  src="https://cdn.rawgit.com/WillWhiteneck/Town-Square/665707b4/dist/town-square.js"\n' +
       '  data-thread-id="' + this.pendingThreadId + '"\n' +
-      '  data-container-id="my-town-square"\n' +
-      (this.$config.ipfsHash ? '  data-ipfs-hash="' + this.$config.ipfsHash + '">' : '>') +
+      '  data-container-id="my-town-square">\n' +
       '<' + '/script>\n'
     },
     ipfsUrl () {

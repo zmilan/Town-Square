@@ -83,7 +83,6 @@ export default {
     }
   },
   mounted () {
-    console.log('~~~~~~~~~~~~~~~', this.$route)
     if (this.$route.params && this.$route.params.thread) {
       this.switchThread({ id: this.$route.params.thread })
     } else {

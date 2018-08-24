@@ -40,7 +40,6 @@ export default {
     this.modalWidth = window.innerWidth < this.modalWidth
       ? window.innerWidth
       : this.modalWidth
-    console.log('modal width', this.modalWidth)
   },
   methods: {
     beforeOpen (event) {
