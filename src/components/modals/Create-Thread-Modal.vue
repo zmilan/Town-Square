@@ -21,8 +21,12 @@
       </div>
     </div>
     <div v-else>
+      <p>
       Start a conversation. Threads can be about whatever your want.
+      </p>
+      <p>
       Embed them on your site or view them on ipfs. 
+      </p>
       <div v-if="$store.state.ethAddress">
         <div class="editorContainer">
           <editor :id="0" ref="editor" class="editor" :autosave="false" :placeholder="placeholder"></editor>
