@@ -21,7 +21,7 @@
       Town Square is a project for the community. The only costs are gas fees to the ethereum network. 
     </p>
     <p>
-      The project is open source so please take a look at the code and contribute on Github ✌️
+      The project is open source so please take a look at the code and contribute on <a href="https://github.com/WillWhiteneck/Town-Square">Github</a> ✌️
     </p>
   </div>
 </modal>

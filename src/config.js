@@ -5,8 +5,8 @@ const config = {
   ipfsUrl: 'https://ipfs.infura.io:5001',
   ethereumUrl: process.env.NODE_ENV === 'production' ? 'https://mainnet.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51' : 'https://rinkeby.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51',
   depthLimit: embedded ? Infinity : 1,
-  editorPlaceholderReply: 'What are your thoughts?',
   editorPlaceholderTop: 'What are your thoughts?', // Add your own post here...
+  editorPlaceholderReply: 'What are your thoughts?',
   containerId: 'town-square',
   maxTextBytes: 1024 * 100, // 100 kB
   threadId: 0,
