@@ -1,5 +1,5 @@
 <template>
-  <markdown-editor v-model="content" ref="markdownEditor" :configs="markdownConfigs" sanitize="true" html="false"></markdown-editor>
+  <markdown-editor v-model="content" ref="markdownEditor" :configs="markdownConfigs" :sanitize="true" :html="false"></markdown-editor>
 </template>
 
 <script>
@@ -56,6 +56,7 @@ export default {
 <style lang="stylus">
 .markdown-editor .CodeMirror, .markdown-editor .CodeMirror-scroll
   min-height 100px
+  max-height 300px
 .editor-toolbar::before
   margin 0
 .editor-toolbar::after
