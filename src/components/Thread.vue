@@ -5,7 +5,7 @@
         <div class="title-block">
           <!-- TODO, make text a component -->
           <div v-if="text && text.value">
-            <vue-markdown class="text">{{ text.value }}</vue-markdown>
+            <vue-markdown :source="text.value" class="text" :html="false"></vue-markdown>
           </div>
 
           <div class="byline">
@@ -13,11 +13,14 @@
             <identicon class="identicon" :address="rootComment.author"></identicon>
 
             <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-              <a>{{ rootComment.author | truncate }}</a>    
+              <a class="by" v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ rootComment.author }}</a>
+              <a class="by" v-else>{{ rootComment.author | truncate }}</a>   
               •
             </a>
-            <a class="by">
-              <a>{{ rootComment.datePosted | timeAgo }}</a>
+            <a class="by">{{ rootComment.datePosted | timeAgo }}</a>
+            <a v-if="this.$config.ipfsHash" class="by">
+              •
+              <a :href="ipfsUrl" target="_blank" class="ipfs-hash">↗ ipfs</a>
             </a>
           </div>
         </div>
@@ -25,22 +28,22 @@
 
       <div v-if="ethAddress">
         <editor :id="id" ref="editor" :autosave="false" :placeholder="$config.editorPlaceholderTop"></editor>
-        <button class="add-comment-btn" @click="publishComment">add comment</button>
+        <button class="add-comment-btn" @click="publishComment">💬 publish reply</button>
       </div>
       <div v-else class="metamask">
-        Log in with <a href="https://metamask.io/" target="_blank">MetaMask</a> to add a comment
+        Log in to <a href="https://metamask.io/" target="_blank">MetaMask</a> to add a comment
       </div>
       <hr class="divider">
 
       <div class="item-view-comments">
-        <p class="item-view-comments-header">
+        <!-- <p class="item-view-comments-header">
           <spinner :show="loading" class="spinner"></spinner>
-        </p>
-        <ul v-if="!loading && rootComment.child" class="comment-children">
+        </p> -->
+        <ul v-if="rootComment.child" class="comment-children">
           <comment v-for="id in children" :key="id" :id="id" :depth="1"></comment>
         </ul>
-        <div v-if="!loading && !rootComment.child" class="no-comments-container">
-          <div class="no-comments-msg">Be the first to comment 🕊️</div>
+        <div v-if="!rootComment.child" class="no-comments-container">
+          <div class="no-comments-msg">Be the first to comment 🐵</div>
         </div>
       </div>
     </template>
@@ -68,8 +71,7 @@ export default {
     VueMarkdown
   },
   data: () => ({
-    loading: false, // TODO, start with loading = true
-    showDetails: false // TODO, make this a popover
+    showDetails: false
   }),
   computed: {
     children () {
@@ -78,25 +80,22 @@ export default {
     ethAddress () {
       return this.$store.state.ethAddress
     },
+    etherscanUrl () {
+      const network = process.env.NODE_ENV === 'production' ? '' : 'rinkeby.'
+      return `https://${network}etherscan.io/address/${this.rootComment.author}`
+    },
     rootComment () {
       return this.$store.state.comments[this.id]
     },
     text () {
       return this.$store.state.texts[this.id]
+    },
+    ipfsUrl () {
+      return `https://gateway.ipfs.io/ipfs/${this.$config.ipfsHash}/#/thread/${this.id}`
     }
   },
   beforeMount () {
-    // Load the root comment first
-    this.fetchComment({id: this.id}).then(() => {
-      if (this.rootComment && this.rootComment.child) {
-        // Now start load the other comments
-        this.fetchComments({
-          id: this.rootComment.child,
-          numberToLoad: 15,
-          depth: Math.min(this.$config.depthLimit - 1, 3)
-        })
-      }
-    })
+    this.loadThread()
   },
   methods: {
     publishComment () {
@@ -105,10 +104,8 @@ export default {
     ...mapActions({
       'fetchComment': FETCH_COMMENT,
       'fetchComments': FETCH_COMMENTS
-    })
-  },
-  watch: {
-    id: function () {
+    }),
+    loadThread () {
       this.fetchComment({id: this.id}).then(() => {
         if (this.rootComment && this.rootComment.child) {
           // Now start load the other comments
@@ -119,6 +116,11 @@ export default {
           })
         }
       })
+    }
+  },
+  watch: {
+    id: function () {
+      this.loadThread()
     }
   }
 }
@@ -143,6 +145,17 @@ export default {
       .identicon, .by
         display inline-block
         vertical-align middle
+      .by
+        color #828282
+        width fit-content
+        a
+          text-decoration none
+        .ipfs-hash
+          color #828282
+          &:hover
+            color black
+            text-decoration underline
+            cursor pointer
 .add-comment-btn
   background none
   border 2px solid

@@ -1,5 +1,5 @@
 {
-  "name": "pigeon",
+  "name": "town-square",
   "version": "1.0.0",
   "description": "A decentralized commenting platform built with IPFS and Ethereum",
   "author": "Will Whiteneck",
@@ -15,10 +15,12 @@
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
     "sanitize-html": "^1.18.4",
+    "text-encoding": "^0.6.4",
     "vue": "^2.2.2",
     "vue-js-modal": "^1.3.16",
     "vue-markdown": "^2.2.4",
     "vue-notification": "^1.3.13",
+    "vue-router": "^3.0.1",
     "vue-simplemde": "^0.4.8",
     "vuex": "^2.2.1",
     "web3": "1.0.0-beta.34"
@@ -62,6 +64,7 @@
     "vue-loader": "^11.1.4",
     "vue-style-loader": "^2.0.0",
     "vue-template-compiler": "^2.2.4",
+    "web-webpack-plugin": "^4.0.1",
     "webpack": "^2.2.1",
     "webpack-bundle-analyzer": "^2.2.1",
     "webpack-dev-middleware": "^1.10.0",

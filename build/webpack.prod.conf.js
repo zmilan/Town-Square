@@ -24,7 +24,7 @@ var webpackConfig = merge(baseWebpackConfig, {
   devtool: config.build.productionSourceMap ? '#source-map' : false,
   output: {
     path: config.build.assetsRoot,
-    filename: utils.assetsPath('pigeon.js'),
+    filename: utils.assetsPath('./town-square.js'),
     chunkFilename: utils.assetsPath('[id].[chunkhash].js')
   },
   plugins: [
@@ -45,7 +45,7 @@ var webpackConfig = merge(baseWebpackConfig, {
     // }),
     // extract css into its own file
     new ExtractTextPlugin({
-      filename: utils.assetsPath('pigeon.css')
+      filename: utils.assetsPath('./town-square.css')
     }),
     // Compress extracted CSS. We are using this plugin so that possible
     // duplicated CSS from different components can be deduped.

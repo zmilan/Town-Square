@@ -1,5 +1,5 @@
 <template>
-  <markdown-editor v-model="content" ref="markdownEditor" :configs="markdownConfigs"></markdown-editor>
+  <markdown-editor v-model="content" ref="markdownEditor" :configs="markdownConfigs" sanitize="true" html="false"></markdown-editor>
 </template>
 
 <script>
@@ -18,13 +18,27 @@ export default {
       markdownConfigs: {
         autosave: {
           enabled: this.autosave,
-          uniqueId: 'pigeon-' + this.id,
+          uniqueId: 'town-square-' + this.id,
           delay: 1000
         },
-        html: false,
         placeholder: this.placeholder || 'What are your thoughts?',
         spellChecker: false,
-        status: []
+        status: [],
+        toolbar: [
+          'bold',
+          'italic',
+          'strikethrough',
+          '|',
+          'code',
+          'quote',
+          'unordered-list',
+          'ordered-list',
+          'link',
+          '|',
+          'preview',
+          'side-by-side',
+          'fullscreen'
+        ]
       }
     }
   },

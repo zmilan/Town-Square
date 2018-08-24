@@ -2,6 +2,13 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 
+// setup config
+Vue.config.producsectionTip = false
+Vue.prototype.$config = config
+
+// import vue router
+import router from './router'
+
 // load config
 import config from './config'
 
@@ -17,17 +24,20 @@ Object.keys(filters).forEach(key => {
   Vue.filter(key, filters[key])
 })
 
-// setup config
-Vue.config.producsectionTip = false
-Vue.prototype.$config = config
+// initialize the event listener
+import './events'
 
-import App from './App'
 import store from './store'
 
 /* eslint-disable no-new */
 new Vue({
   el: '#' + config.containerId,
   store,
-  template: '<App/>',
-  components: { App }
+  router,
+  template: `<router-view :key="$route.params.thread || ''"></router-view>`
 })
+
+// depthLimit=Infinity should be used when it's embeded, prevent the url-bar changing
+if (config.embedded) {
+  router.replace('/')
+}

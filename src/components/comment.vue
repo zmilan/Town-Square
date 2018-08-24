@@ -1,13 +1,14 @@
 <template>
   <li class="comment" :class="{ pending: comment.status !== COMMENT_STATUS.SAVED, error: (comment.status === COMMENT_STATUS.ERROR) }">
     <div class="comment-content">
+      <!-- TODO make byline a component -->
       <div class="byline">
         
         <identicon class="identicon" :address="comment.author"></identicon>
         
         <a class="by" @mouseover="showDetails = true" @mouseout="showDetails = false">
-          <a v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ comment.author | truncate }}</a>
-          <a v-else>{{ comment.author | truncate }}</a>    
+          <a class="by" v-if="showDetails" :href="etherscanUrl" target="_blank" rel="noopener noreferrer">{{ comment.author }}</a>
+          <a class="by" v-else>{{ comment.author | truncate }}</a>    
           •
         </a>
 
@@ -29,7 +30,8 @@
           <a class="status" v-else-if="comment.status === COMMENT_STATUS.PENDING_APPROVAL">waiting for MetaMask approval</a>
           <a class="status" v-else-if="comment.status === COMMENT_STATUS.PENDING_TX">Waiting for block confirmation</a>
           <a class="error-status" v-else-if="comment.status === COMMENT_STATUS.ERROR">
-            Rejected
+            Rejected - 
+            {{comment.errorMsg}}
             <button class="error-btn" @click="retryReply()">try again</button>
             |
             <button class="error-btn" @click="clearError({ id })">cancel</button>
@@ -41,7 +43,7 @@
       <div v-show="open">
 
         <div v-if="text">
-          <vue-markdown v-if="text.status === TEXT_STATUS.SUCCESS && text.value" class="text">{{text.value}}</vue-markdown>
+          <vue-markdown v-if="text.status === TEXT_STATUS.SUCCESS && text.value" :source="text.value" class="text" :html="false"></vue-markdown>
           
           <div v-else-if="text.status === TEXT_STATUS.FETCHING" class="status text-status">
             <spinner show="true" style="spinner"></spinner>
@@ -56,21 +58,23 @@
         </div>
 
         <div v-if="comment.status === COMMENT_STATUS.SAVED">
-          <div class="action-btns" v-if="!replying">
-            <div v-if="depth < $config.depthLimit - 1">
-              <div v-if="ethAddress">
-                <button class="action-btn " 
+          <div v-if="!replying">
+            <span v-if="depth < depthLimit - 1">
+              <span v-if="ethAddress">
+                <button class="action-btn" 
                   @click="replying = true">
-                  reply
+                  💬 reply
                 </button>
-              </div>
-            </div>
-            <div v-else>
-              <button class="action-btn" 
-                @click="switchThread({ id })">
-                view comments
-              </button>
-            </div>
+              </span>
+            </span>
+            <span v-else>
+              <router-link class="action-btn" :to="`/thread/${id}`">
+                {{ comment.child ? 'view comments' : '0 comments' }}
+              </router-link>
+            </span>
+            <span v-if="$config.ipfsHash">
+              <a :href="ipfsUrl" target="_blank" class="action-btn">↗ ipfs</a>
+            </span>
           </div>
 
           <transition name="slide-fade">
@@ -88,12 +92,12 @@
               <editor ref="editor" :id="id" :autosave="false" :placeholder="$config.editorPlaceholder"></editor>
               <div class="md-btns">
                 <button class="md-btn" @click="replying = false">Cancel</button>
-                <button class="md-btn reply" @click="reply">Reply</button>
+                <button class="md-btn reply" @click="reply">💬 Reply</button>
               </div>
             </div>
           </transition>
 
-          <ul class="comment-children" v-if="depth < $config.depthLimit">
+          <ul class="comment-children" v-if="depth < depthLimit">
             <comment v-for="id in children" :key="id" :id="id" :depth="depth + 1"></comment>
           </ul>
 
@@ -118,8 +122,7 @@ import COMMENT_STATUS from '../enum/commentStatus'
 import Editor from './Editor'
 import Identicon from './Identicon'
 import Spinner from './Spinner'
-import { FETCH_COMMENTS, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT, NEW_ROOT_COMMENT, SWITCH_THREAD, PUBLISH_COMMENT } from '../store/types'
-import { makeParamtersRoute } from '../util/routeParameters'
+import { FETCH_COMMENTS, REMOVE_COMMENT, FETCH_COMMENT, FETCH_TEXT, SWITCH_THREAD, PUBLISH_COMMENT } from '../store/types'
 import TEXT_STATUS from '../enum/textStatus'
 
 export default {
@@ -145,25 +148,33 @@ export default {
       return this.$store.state.comments[this.id]
     },
     etherscanUrl () {
-      return 'https://rinkeby.etherscan.io/address/' + this.comment.author
+      const network = process.env.NODE_ENV === 'production' ? '' : 'rinkeby.'
+      return `https://${network}etherscan.io/address/${this.comment.author}`
     },
     ethAddress () {
       return this.$store.state.ethAddress
     },
-    viewCommentsUrl () {
-      return makeParamtersRoute(this.id, this.$config.clickThroughConfig)
-    },
     children () {
       return this.$store.state.children[this.id] || []
+    },
+    depthLimit () {
+      if (this.$store.state.threadId === this.$store.state.initialThreadId) {
+        return this.$config.depthLimit
+      } else {
+        return 10
+      }
     },
     text () {
       return this.$store.state.texts[this.id]
     },
     canLoadChild () {
-      return this.comment.child && !this.$store.state.comments[this.comment.child] && this.depth < this.$config.depthLimit
+      return this.comment.child && !this.$store.state.comments[this.comment.child] && this.depth < this.depthLimit
     },
     canLoadSibling () {
       return this.comment.sibling && !this.$store.state.comments[this.comment.sibling]
+    },
+    ipfsUrl () {
+      return `https://gateway.ipfs.io/ipfs/${this.$config.ipfsHash}/#/thread/${this.id}`
     }
   },
   methods: {
@@ -180,11 +191,17 @@ export default {
     clearError () {
       this.removeComment({ parent: this.$store.state.parents[this.id], id: this.id })
     },
+    viewComment () {
+      if (this.$config.moreCommentHref) {
+
+      } else {
+        this.switchThread({ id: this.id })
+      }
+    },
     ...mapActions({
       'removeComment': REMOVE_COMMENT,
       'fetchComment': FETCH_COMMENT,
       'fetchComments': FETCH_COMMENTS,
-      'newRootComment': NEW_ROOT_COMMENT,
       'fetchText': FETCH_TEXT,
       'switchThread': SWITCH_THREAD,
       'publishComment': PUBLISH_COMMENT
@@ -240,7 +257,7 @@ fontSize = 1em
       .identicon, .by, .toggle
         display inline-block
         vertical-align middle
-        font-size (0.8 * fontSize)
+        font-size (0.9 * fontSize)
         color #828282
       .identicon
         width 2em
@@ -304,6 +321,8 @@ fontSize = 1em
       border none
       color #828282
       font-size (0.8 * fontSize)
+      margin 0.4em
+      text-decoration none
       &:hover
         color black
         text-decoration underline

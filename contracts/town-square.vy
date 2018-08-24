@@ -33,7 +33,7 @@ def publishThread(_ipfs_hash: bytes32):
 
 @public
 def publishComment(_parent: int128, _ipfs_hash: bytes32):
-    assert self.comments[_parent].date_posted > 0
+    assert self.comments[_parent].author != 0x0000000000000000000000000000000000000000
 
     self.comment_count += 1
 

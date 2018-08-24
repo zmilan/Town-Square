@@ -12,5 +12,6 @@ export default {
   ethereumStatus: ETHEREUM_STATUS.UNCHECKED,
   ipfsStatus: IPFS_STATUS.UNCHECKED,
   ipfsUrl: '',
-  threadId: 0
+  threadId: 0,
+  initialThreadId: 0
 }

@@ -59,6 +59,9 @@ export default {
       state.comments[id].child = child
     }
   },
+  SET_COMMENT_ERROR_MSG: (state, {id, msg}) => {
+    Vue.set(state.comments[id], 'errorMsg', msg)
+  },
   SET_COMMENT_STATUS: (state, {id, status}) => {
     Vue.set(state.comments[id], 'status', status)
   },
@@ -108,6 +111,9 @@ export default {
   },
   SET_THREAD_ID: (state, { id }) => {
     state.threadId = id
+    if (!state.initialThreadId) {
+      state.initialThreadId = state.threadId
+    }
   },
   SET_TEXT_VALUE: (state, { id, value }) => {
     if (!state.texts[id]) {

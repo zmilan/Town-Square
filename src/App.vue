@@ -5,7 +5,18 @@
   <settings-modal />
   <notification group="ipfs-notification"/>
   <notification group="ethereum-notification"/>
-  
+
+  <div class="title-tagline">
+    <button class="title" @click="onTitleClick()">
+      ⛲ Town Square
+    </button>
+    <span class="tagline">
+      a fully decentralized discussion platform
+    </span>
+  </div>
+
+  <br>
+
   <Thread :id="threadId" v-if="connected"/>
 
   <hr class="divider">
@@ -13,11 +24,11 @@
   <div>
     <span>
       <button class="logo footer-btn" @click="$modal.show('about-modal')">
-        ⛲ How does this work?
+        ⛲ About Town Square
       </button>
       |
       <button class="footer-btn" @click="$modal.show('create-thread-modal')">
-        🌳 add Town Square to your site
+        🌳 Start a new thread
       </button>
       |
       <button class="footer-btn" @click="$modal.show('settings-modal')">
@@ -34,7 +45,6 @@
 </template>
 
 <script>
-import debounce from 'lodash.debounce'
 import throttle from 'lodash.throttle'
 import { mapActions } from 'vuex'
 
@@ -43,11 +53,10 @@ import ETHEREUM_STATUS from './enum/ethereumStatus'
 import IPFS_STATUS from './enum/ipfsStatus'
 import AboutModal from './components/modals/About-Modal'
 import CreateThreadModal from './components/modals/Create-Thread-Modal'
-import Emitter from './util/emitter'
 import Notification from './components/Notification'
 import SettingsModal from './components/modals/Settings-Modal'
 import Spinner from './components/Spinner'
-import { SWITCH_THREAD, UPDATE_ETH_ADDRESS, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
+import { SWITCH_THREAD, UPDATE_ETHEREUM_CONNECTION, UPDATE_IPFS_CONNECTION } from './store/types'
 
 export default {
   name: 'app',
@@ -73,22 +82,33 @@ export default {
       return this.$store.state.threadId
     }
   },
+  mounted () {
+    console.log('~~~~~~~~~~~~~~~', this.$route)
+    if (this.$route.params && this.$route.params.thread) {
+      this.switchThread({ id: this.$route.params.thread })
+    } else {
+      this.switchThread({ id: this.$config.threadId })
+    }
+  },
   beforeMount () {
-    // register metamask event listeners
-    Emitter.on('Metamask-Update', debounce(function (details) {
-      if (details) {
-        this.updateEthAddress({ address: details.selectedAddress })
-      }
-    }.bind(this)), 1000)
-
-    this.switchThread({ id: this.$config.threadId })
-    this.updateEthereumConnection({url: this.$config.ethereumUrl})
-    this.updateIpfsConnection({url: this.$config.ipfsUrl})
+    if (this.$store.state.ethereumStatus !== ETHEREUM_STATUS.SUCCESS) {
+      this.updateEthereumConnection({url: this.$config.ethereumUrl})
+    }
+    if (this.$store.state.ipfsStatus !== IPFS_STATUS.SUCCESS) {
+      this.updateIpfsConnection({url: this.$config.ipfsUrl})
+    }
   },
   methods: {
+    onTitleClick () {
+      if (this.$store.state.threadId === this.$store.state.initialThreadId) {
+        this.$modal.show('about-modal')
+      } else {
+        this.$router.push(`/thread/${this.$store.state.initialThreadId}`)
+        // this.switchThread({ id: this.$store.state.initialThreadId })
+      }
+    },
     ...mapActions({
       'switchThread': SWITCH_THREAD,
-      'updateEthAddress': UPDATE_ETH_ADDRESS,
       'updateEthereumConnection': UPDATE_ETHEREUM_CONNECTION,
       'updateIpfsConnection': UPDATE_IPFS_CONNECTION
     })
@@ -147,6 +167,22 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+.title-tagline
+  margin-left 1em
+  .title
+    font-size 1.3em
+    background none
+    border none
+    color #828282
+    margin-left -0.5em
+    &:hover
+      color black
+      text-decoration underline
+      cursor pointer
+  .tagline
+    font-size 0.8em
+    color #828282
+    white-space nowrap
 .footer-btn
   font-size 0.8em
   background none

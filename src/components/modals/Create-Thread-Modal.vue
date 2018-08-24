@@ -2,13 +2,17 @@
 <modal name="create-thread-modal" transition="pop-out" :width="modalWidth" :height="500">
   <div class="container">
     <button class="btn close" @click="close()">[X]</button>
-    <h5> Make a new Town Square thread </h5>
+    <h4> Make a new Town Square thread </h4>
     <div v-if="pendingThread">
       <div class="commentContainer">
         <Comment :id="pendingThreadId" :depth="0"></comment>
       </div>
       <div v-if="pendingThread.datePosted">
         <div>Your thread's id is <span class="threadId">{{pendingThreadId}}</span></div>
+        <br>
+        <div v-if="$config.ipfsHash">
+          <a :href="ipfsUrl" target="_blank">View on IPFS</a>
+        </div>
         <br>
         Use this snippet to embed your thread 
         <button @click="copyText" class="btn">{{copySymbol}} copy</button>
@@ -17,8 +21,8 @@
       </div>
     </div>
     <div v-else>
-      Town Square is so decentralized it doesn't even have a homepage. It lives on many sites in 
-      threads can be embedded on your site
+      Start a conversation. Threads can be about whatever your want.
+      Embed them on your site or view them on ipfs. 
       <div v-if="$store.state.ethAddress">
         <div class="editorContainer">
           <editor :id="0" ref="editor" class="editor" :autosave="false" :placeholder="placeholder"></editor>
@@ -67,8 +71,12 @@ export default {
       '<script\n' +
       '  src="https://cdn.rawgit.com/WillWhiteneck/ether-comments/master/src/config.js?token=AF0DkARvUKi4SosQiaNbh6VzASw41zM7ks5bhYndwA%3D%3D"\n' +
       '  data-thread-id="' + this.pendingThreadId + '"\n' +
-      '  data-container-id="my-town-square">' +
+      '  data-container-id="my-town-square"\n' +
+      (this.$config.ipfsHash ? '  data-ipfs-hash="' + this.$config.ipfsHash + '">' : '>') +
       '<' + '/script>\n'
+    },
+    ipfsUrl () {
+      return `https://gateway.ipfs.io/ipfs/${this.$config.ipfsHash}/#/thread/${this.pendingThreadId}`
     }
   },
   created () {
