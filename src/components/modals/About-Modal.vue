@@ -5,10 +5,7 @@
       <button class="btn" @click="$modal.hide('about-modal')">[X]</button>
     </div>
     <p>
-      ⛲ Town Square is a fully decentralized discussion platform built on Ethereum and IPFS.
-    </p>
-    <p>
-    It's like Disqus, but it's not owned by anybody.
+      ⛲ Town Square is a fully decentralized discussion platform that's owned by everybody, built on Ethereum and IPFS.
     </p>
     <p>
       An Ethereum smart contract is used to keep track of the comments and verify identities.

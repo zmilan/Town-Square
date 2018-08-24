@@ -1,9 +1,21 @@
 <html>
 <head>
-  <title>Dinosaur Blog!</title>
+  <title>Dinosaur Blog! 🦕🦖</title>
+  <link href="./node_modules/town-square/dist/town-square.css" rel="stylesheet">
+  <style>
+    .container {
+      width: 50%;
+      min-width: 300px;
+      margin: 1em auto;
+    }
+    .town-square-container {
+      border: 1px solid black;
+    }
+  </style>
 </head>
-<body>
-  <h3>Dinosaurs! 🦕🦖</h3>
+<body class="container">
+  <h3>Dinosaurs Blog! 🦕🦖</h3>
+  <h4>My Favorite Dinos</h4>
   <p>
     Bravoceratops Naashoibitosaurus Algoasaurus Podokesaurus Diceratus Nomingia Dongbeititan Sonorasaurus Alioramus Marasuchus
     Ceratosaurus Talos Dolichosuchus Chuandongocoelurus Massospondylus Scansoriopteryx Inosaurus Xianshanosaurus Segisaurus
@@ -26,9 +38,11 @@
     Ceratonykus.
   </p>
   <br>
-  <div id="my-town-square"></div>
+  <div class="town-square-container">
+    <div id="my-town-square"></div>
+  </div>
   <script
-    src=""
+    src="./node_modules/town-square/dist/town-square.js"
     data-thread-id="1"
     data-container-id="my-town-square">
   </script>
