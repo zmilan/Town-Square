@@ -71,12 +71,11 @@ export default {
     },
     htmlSnippet () {
       return '\n' +
-      '<div id="my-town-square"></div>\n' +
+      '<div id="town-square"></div>\n' +
       '<link href="https://cdn.rawgit.com/WillWhiteneck/Town-Square/665707b4/dist/town-square.css" rel="stylesheet">\n' +
       '<script\n' +
       '  src="https://cdn.rawgit.com/WillWhiteneck/Town-Square/665707b4/dist/town-square.js"\n' +
-      '  data-thread-id="' + this.pendingThreadId + '"\n' +
-      '  data-container-id="my-town-square">\n' +
+      '  data-thread-id="' + this.pendingThreadId + '">\n' +
       '<' + '/script>\n'
     },
     ipfsUrl () {
