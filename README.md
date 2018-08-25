@@ -24,8 +24,6 @@ Town Square exists amorphously. It doesn't have a central homepage. It is built 
 ### Start a new Thread ###
 Click on "🌳 Start a new thread" in the footer of [any Town Square](https://gateway.ipfs.io/ipfs/QmbeWHQan8JcL8Qbsix8q3ZzgvrVZFL1rpedURJVooHGLq/#/thread/1) to make your own thread. 
 
-![🌳 Start a new thread](https://i.imgur.com/GY5pScm.png)
-
 Once you click "submit" you'll get a unique thread id. Use the following snippet to embed Town Square on your site. 
 
 ```html
