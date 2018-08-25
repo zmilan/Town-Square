@@ -80,26 +80,24 @@ Customize Town Square to suit your needs.
 * data-thread-id - The id of your thread. Make sure you set this if you are embedding Town Square on your website. (default: 0)
 
 ### Development ###
-Contributions are welcome. There is a lot of room for improvement, for example:
-- [ ] Display a person's comment history
-- [ ] Configurable css themes
-- [ ] Use an Ethereum identity service to optionally show names instead of addresses.
-- [ ] Bug fixes
 
-#### Quickstart ####
 Clone the repo
 ```
 git clone https://github.com/WillWhiteneck/Town-Square.git
 cd town-square
 ```
 
-Run the app in development mode:
+Run in development mode:
 ```
 npm run dev
 ```
-Note: development mode will automatically use the 'Rinkeby' network.
 
-After you've made changes compile the files in the 'dist' folder:
+After you've made changes compile to the *dist* folder:
 ```
 npm run build
 ```
+
+TODO
+- [ ] Display a person's comment history
+- [ ] Configurable css themes
+- [ ] Use an Ethereum identity service to optionally show names instead of addresses.

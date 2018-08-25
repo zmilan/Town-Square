@@ -1,6 +1,6 @@
 {
   "name": "town-square",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A decentralized commenting platform built with IPFS and Ethereum",
   "author": "Will Whiteneck",
   "main": "dist/town-square.js",
