@@ -18,11 +18,11 @@ Town Square exists amorphously. It doesn't have a central homepage. It is built 
 
 ### Live Demos ###
 * [Blog Demo](https://dino-blog.neocities.org/)
-* [Reddit Demo](https://gateway.ipfs.io/ipfs/QmYkt7vDgSQaKKzzZZcJfsYVQas4oVxnJ6gDuSKNQYQiVr/#/thread/4)
+* [Reddit Demo](https://gateway.ipfs.io/ipfs/QmVzUTPWBgkesyvqi7SaTLUgbHyZi1RgXLz5PGfT6Qv5pm/#/thread/4)
 
 
 ### Start a new Thread ###
-Click on "🌳 Start a new thread" in the footer of [any Town Square](https://gateway.ipfs.io/ipfs/QmbeWHQan8JcL8Qbsix8q3ZzgvrVZFL1rpedURJVooHGLq/#/thread/1) to make your own thread. 
+Click on "🌳 Start a new thread" in the footer of [any Town Square](https://gateway.ipfs.io/ipfs/QmVzUTPWBgkesyvqi7SaTLUgbHyZi1RgXLz5PGfT6Qv5pm/#/thread/1) to make your own thread. 
 
 Once you click "submit" you'll get a unique thread id. Use the following snippet to embed Town Square on your site. 
 
@@ -63,7 +63,7 @@ Customize Town Square to suit your needs.
   data-editor-placeholder-reply="What are your thoughts?"
   data-editor-placeholder-top="What are your thoughts?"
   data-ethereum-url="https://mainnet.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51"
-  data-ipfs-hash="QmbeWHQan8JcL8Qbsix8q3ZzgvrVZFL1rpedURJVooHGLq"
+  data-ipfs-hash="QmVzUTPWBgkesyvqi7SaTLUgbHyZi1RgXLz5PGfT6Qv5pm"
   data-ipfs-url="https://ipfs.infura.io:5001"
   data-max-text-bytes="100000"
   data-thread-id="2"></script>

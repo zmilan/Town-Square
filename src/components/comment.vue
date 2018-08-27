@@ -73,7 +73,7 @@
               </router-link>
             </span>
             <span v-if="$config.ipfsHash">
-              <a :href="ipfsUrl" target="_blank" class="action-btn">↗ ipfs</a>
+              <a :href="ipfsUrl" target="_blank" class="action-btn">&#8599; ipfs</a>
             </span>
           </div>
 
@@ -102,10 +102,10 @@
           </ul>
 
           <button v-if="canLoadSibling" class="md-btn" @click="fetchComments({id: comment.sibling, numberToLoad: 15, depth: 3})">
-            load more <a class="arrow">⬇</a>
+            load more <a class="arrow">&#8595;</a>
           </button>
           <button v-if="canLoadChild" class="md-btn" @click="fetchComments({id: comment.child, numberToLoad: 15, depth: 3})">
-            load more <a class="arrow">⬊</a>
+            load more <a class="arrow">&#8600;</a>
           </button>
         </div>
 

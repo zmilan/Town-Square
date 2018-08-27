@@ -1,5 +1,5 @@
 <template>
-<modal name="create-thread-modal" transition="pop-out" :width="modalWidth" :height="500">
+<modal name="create-thread-modal" transition="pop-out" :width="modalWidth" height="auto">
   <div class="container">
     <button class="btn close" @click="close()">[X]</button>
     <h4> Make a new Town Square thread </h4>
@@ -136,6 +136,7 @@ export default {
     overflow hidden auto
     resize none
   .btn
+    font-size 1em
     background none
     border none
     color #828282

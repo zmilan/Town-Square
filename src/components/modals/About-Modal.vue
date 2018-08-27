@@ -1,5 +1,5 @@
 <template>
-<modal name="about-modal" transition="pop-out" :width="modalWidth" :height="500">
+<modal name="about-modal" transition="pop-out" :width="modalWidth" height="auto">
   <div class="modal-content">
     <div class="btn-container">
       <button class="btn" @click="$modal.hide('about-modal')">[X]</button>
@@ -13,7 +13,6 @@
     <p>
       IPFS is used to store the content of the comments.
     </p>
-    
     <p>
       Town Square is a project for the community. There is no token. The only costs are gas fees to the ethereum network. 
     </p>
@@ -29,13 +28,18 @@ export default {
   name: 'AboutModal',
   data () {
     return {
-      modalWidth: 300
+      modalWidth: 550,
+      modalHeight: 400
     }
   },
   created () {
     this.modalWidth = window.innerWidth < this.modalWidth
       ? window.innerWidth
       : this.modalWidth
+
+    if (this.modalWidth < 1000) {
+      this.modalHeight += 200
+    }
   }
 }
 </script>
@@ -46,6 +50,7 @@ export default {
     text-align center
     align center
     .btn
+      font-size 1em
       background none
       border none
       color #828282

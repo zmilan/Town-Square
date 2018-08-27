@@ -20,7 +20,7 @@
             <a class="by">{{ rootComment.datePosted | timeAgo }}</a>
             <a v-if="this.$config.ipfsHash" class="by">
               •
-              <a :href="ipfsUrl" target="_blank" class="ipfs-hash">↗ ipfs</a>
+              <a :href="ipfsUrl" target="_blank" class="ipfs-hash">&#8599; ipfs</a>
             </a>
           </div>
         </div>

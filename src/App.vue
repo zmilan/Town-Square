@@ -1,5 +1,5 @@
 <template>
-<div>
+<div class="app">
   <about-modal />
   <create-thread-modal />
   <settings-modal />
@@ -166,6 +166,17 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+.app
+  font-size 16px
+@media only screen and (max-width 1000px)
+  .app
+    font-size 1.75rem
+@media only screen and (max-width 800px)
+  .app
+    font-size 1.5rem
+@media only screen and (max-width 500px)
+  .app
+    font-size 1rem
 .title-tagline
   margin-left 1em
   .title
@@ -201,4 +212,5 @@ export default {
       font-size 1.25em
   .footer-right
     float none
+    margin-left 0.7em
 </style>

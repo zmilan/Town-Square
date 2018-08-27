@@ -1,5 +1,5 @@
 <template>
-<modal name="settings-modal" @before-open="beforeOpen" transition="pop-out" :width="modalWidth" :height="400">
+<modal name="settings-modal" @before-open="beforeOpen" transition="pop-out" :width="modalWidth" height="auto">
   <div class="container">
     <button class="btn close" @click="$modal.hide('settings-modal')">[X]</button>
     <div class="input-field">
@@ -67,9 +67,12 @@ export default {
 
 <style lang="stylus" scoped>
 .container
-  margin 3em
+  padding 1.5em
+  font-size 1em
   text-align center
   align center
+  margin-top 1.5em
+  margin-bottom 1.5em
   .input-field
     width 10em
     text-align center
@@ -77,11 +80,13 @@ export default {
     margin 2em auto
     text-align left
     .input-box
+      font-size 1em
       width 100%
     .mm-msg
       font-size 0.7em
       color #777
   button
+    font-size 1em
     background none
     border none
     &:hover
