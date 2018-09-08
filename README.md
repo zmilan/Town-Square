@@ -76,7 +76,7 @@ Customize Town Square to suit your needs.
 * data-ethereum-url - The default ethereum node URL. This gets overriden if the user has MetaMask. (default: https://mainnet.infura.io/v3/17a0bf02d6fb4fa9a97be85940caac51)
 * data-ipfs-hash - The IPFS hash for the standalone Town Square reader. (default: <most_recent_release>)
 * data-ipfs-url - The default ipfs gateway URL. the gateway must have no CORS restrictions and ideally will be nice enough to pin the incoming content. (default: https://ipfs.infura.io:5001)
-* data-max-text-bytes - The maximum file size (in bytes) that Town Square will pull from IPFS. Somebody chould potentially cause problems if they upload a massive file as the comment content. Make sure this field is set small enough to prevent problems like that. (default: 100000 /* 100 kB */) x
+* data-max-text-bytes - The maximum file size (in bytes) that Town Square will pull from IPFS. Somebody could potentially cause problems if they upload a massive file as the comment content. Make sure this field is set small enough to prevent problems like that. (default: 100000 /* 100 kB */) x
 * data-thread-id - The id of your thread. Make sure you set this if you are embedding Town Square on your website. (default: 0)
 
 ### Development ###
